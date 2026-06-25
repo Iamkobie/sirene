@@ -154,7 +154,9 @@ function RankBadge({ rank, size = 32 }: { rank: Rank; size?: number }) {
 function ProgressBar({ pct, color, height = 7 }: { pct: number; color: string; height?: number }) {
   return (
     <div style={{ height, width: "100%", background: "rgba(255,255,255,0.06)", borderRadius: height, overflow: "hidden", border: `1px solid rgba(255,26,26,0.08)` }}>
-      <div style={{ height: "100%", width: `${Math.min(pct, 100)}%`, background: `linear-gradient(90deg, ${color}, ${color}bb)`, borderRadius: height, boxShadow: `0 0 12px ${color}55, inset 0 1px 0 rgba(255,255,255,0.2)`, transition: "width 0.6s cubic-bezier(0.4,0,0.2,1)" }} />
+      <div style={{ height: "100%", width: `${Math.min(pct, 100)}%`, background: `linear-gradient(90deg, ${color}cc, ${color})`, borderRadius: height, boxShadow: `0 0 12px ${color}55, inset 0 1px 0 rgba(255,255,255,0.3)`, transition: "width 0.8s cubic-bezier(0.4,0,0.2,1)", position: "relative", overflow: "hidden" }}>
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)", backgroundSize: "200% 100%", animation: "shimmer 2s linear infinite" }} />
+      </div>
     </div>
   );
 }
@@ -168,9 +170,9 @@ function Card({ children, style = {}, onClick, glowColor }: { children: React.Re
         background: hovered ? C.surfaceHover : C.surface,
         border: `1.5px solid ${hovered ? C.borderHover : C.border}`,
         borderRadius: 16,
-        boxShadow: hovered ? `0 0 14px ${gc}11, 0 6px 20px rgba(0,0,0,0.35)` : "0 2px 8px rgba(0,0,0,0.2)",
-        transform: hovered && onClick ? "translateY(-2px) scale(1.005)" : "translateY(0) scale(1)",
-        transition: "all 0.25s cubic-bezier(0.34,1.56,0.64,1)",
+        boxShadow: hovered ? `0 0 20px ${gc}15, 0 8px 24px rgba(0,0,0,0.4)` : "0 2px 8px rgba(0,0,0,0.2)",
+        transform: hovered && onClick ? "translateY(-3px) scale(1.008)" : "translateY(0) scale(1)",
+        transition: "all 0.3s cubic-bezier(0.34,1.56,0.64,1)",
         cursor: onClick ? "pointer" : "default",
         ...style,
       }}
@@ -183,17 +185,20 @@ function Btn({ children, color = C.red, onClick, full = false, variant = "solid"
   variant?: "solid" | "outline" | "ghost"; size?: "sm" | "md" | "lg"; disabled?: boolean;
 }) {
   const [hovered, setHovered] = useState(false);
+  const [pressed, setPressed] = useState(false);
   const pad = { sm: "8px 16px", md: "11px 24px", lg: "14px 34px" };
   const fs = { sm: 12, md: 13, lg: 15 };
   const bg = variant === "solid" ? (disabled ? "rgba(255,26,26,0.12)" : color) : "transparent";
   const border = variant === "outline" ? `2px solid ${color}` : "2px solid transparent";
   const textColor = variant === "solid" ? (disabled ? "#6b3333" : "#fff") : color;
   const shadow = variant === "solid" && !disabled ? `0 2px 10px ${color}33` : "none";
-  const hoverShadow = variant === "solid" && !disabled ? `0 4px 16px ${color}44` : variant === "outline" ? `0 0 8px ${color}18` : "none";
+  const hoverShadow = variant === "solid" && !disabled ? `0 6px 20px ${color}55` : variant === "outline" ? `0 0 12px ${color}22` : "none";
+  const t = pressed ? "translateY(0px) scale(0.97)" : hovered && !disabled ? "translateY(-3px) scale(1.04)" : "none";
   return (
     <button onClick={onClick} disabled={disabled}
-      onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
-      style={{ ...ui, fontWeight: 800, fontSize: fs[size], background: bg, border, color: textColor, borderRadius: 12, padding: pad[size], cursor: disabled ? "not-allowed" : "pointer", width: full ? "100%" : undefined, boxShadow: hovered ? hoverShadow : shadow, transform: hovered && !disabled ? "translateY(-2px) scale(1.03)" : "none", transition: "all 0.2s cubic-bezier(0.34,1.56,0.64,1)", letterSpacing: "0.02em" }}
+      onMouseEnter={() => setHovered(true)} onMouseLeave={() => { setHovered(false); setPressed(false); }}
+      onMouseDown={() => setPressed(true)} onMouseUp={() => setPressed(false)}
+      style={{ ...ui, fontWeight: 800, fontSize: fs[size], background: bg, border, color: textColor, borderRadius: 12, padding: pad[size], cursor: disabled ? "not-allowed" : "pointer", width: full ? "100%" : undefined, boxShadow: hovered ? hoverShadow : shadow, transform: t, transition: "all 0.2s cubic-bezier(0.34,1.56,0.64,1)", letterSpacing: "0.02em" }}
     >{children}</button>
   );
 }
@@ -205,7 +210,7 @@ function Input({ label, type = "text", value, onChange, placeholder }: { label?:
       {label && <div style={{ ...ui, fontSize: 11, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6 }}>{label}</div>}
       <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
         onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
-        style={{ ...ui, width: "100%", background: "rgba(255,26,26,0.03)", border: `2px solid ${focused ? C.red + "77" : C.border}`, borderRadius: 12, padding: "12px 16px", color: C.text, fontSize: 14, outline: "none", boxSizing: "border-box", boxShadow: focused ? `0 0 16px ${C.red}33, inset 0 0 8px ${C.red}11` : "none", transition: "all 0.2s ease" }}
+        style={{ ...ui, width: "100%", background: "rgba(255,26,26,0.03)", border: `2px solid ${focused ? C.red + "77" : C.border}`, borderRadius: 12, padding: "12px 16px", color: C.text, fontSize: 14, outline: "none", boxSizing: "border-box", boxShadow: focused ? `0 0 20px ${C.red}33, inset 0 0 10px ${C.red}11` : "none", transition: "all 0.3s ease", transform: focused ? "scale(1.01)" : "scale(1)" }}
       />
     </div>
   );
@@ -256,18 +261,19 @@ function NavButton({ label, icon, active, onClick }: { label: string; icon: stri
   return (
     <button onClick={onClick} title={label}
       onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
-      style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 50, border: "none", background: active ? C.red : hovered ? "rgba(255,26,26,0.10)" : "transparent", color: active ? "#fff" : hovered ? C.text : C.textMuted, cursor: "pointer", fontSize: 12, fontWeight: 700, transition: "all 0.2s cubic-bezier(0.34,1.56,0.64,1)", boxShadow: active ? `0 0 10px ${C.red}33` : "none", transform: hovered && !active ? "scale(1.05)" : active ? "scale(1)" : "scale(1)", ...ui }}
+      style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 50, border: "none", background: active ? C.red : hovered ? "rgba(255,26,26,0.12)" : "transparent", color: active ? "#fff" : hovered ? C.text : C.textMuted, cursor: "pointer", fontSize: 12, fontWeight: 700, transition: "all 0.25s cubic-bezier(0.34,1.56,0.64,1)", boxShadow: active ? `0 2px 12px ${C.red}44` : "none", transform: hovered && !active ? "scale(1.06)" : active ? "scale(1)" : "scale(1)", ...ui }}
     >
-      <span style={{ fontSize: 14, lineHeight: 1 }}>{icon}</span>
+      <span style={{ fontSize: 14, lineHeight: 1, transition: "transform 0.2s", transform: hovered ? "scale(1.2)" : "scale(1)" }}>{icon}</span>
       <span style={{ fontSize: 12 }}>{label}</span>
     </button>
   );
 }
 
-function Navbar({ xp, rank, playerName }: { xp: number; rank: Rank; playerName: string }) {
+function Navbar({ xp, rank, playerName, onLogout }: { xp: number; rank: Rank; playerName: string; onLogout: () => void }) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const screen = pathname.replace("/", "") || "home";
+  const [showMenu, setShowMenu] = useState(false);
   return (
     <header style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, padding: "10px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(10,10,10,0.94)", backdropFilter: "blur(20px)", borderBottom: `2px solid ${C.border}` }}>
       <button onClick={() => navigate("/home")} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 10 }}>
@@ -281,19 +287,39 @@ function Navbar({ xp, rank, playerName }: { xp: number; rank: Rank; playerName: 
         ))}
       </nav>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(255,26,26,0.04)", border: `1.5px solid ${C.border}`, borderRadius: 50, padding: "5px 14px 5px 6px", cursor: "pointer", transition: "all 0.2s" }} onClick={() => navigate("/profile")}>
-        <RankBadge rank={rank} size={28} />
-        <div style={{ lineHeight: 1.2 }}>
-          <div style={{ ...ui, fontSize: 11, fontWeight: 800, color: C.text }}>{playerName}</div>
-          <div style={{ ...mono, fontSize: 9, color: RANKS[rank].color }}>{xp.toLocaleString()} XP</div>
+      <div style={{ position: "relative" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(255,26,26,0.04)", border: `1.5px solid ${C.border}`, borderRadius: 50, padding: "5px 14px 5px 6px", cursor: "pointer", transition: "all 0.2s" }} onClick={() => setShowMenu((v) => !v)}>
+          <RankBadge rank={rank} size={28} />
+          <div style={{ lineHeight: 1.2 }}>
+            <div style={{ ...ui, fontSize: 11, fontWeight: 800, color: C.text }}>{playerName}</div>
+            <div style={{ ...mono, fontSize: 9, color: RANKS[rank].color }}>{xp.toLocaleString()} XP</div>
+          </div>
         </div>
+        {showMenu && (
+          <>
+            <div onClick={() => setShowMenu(false)} style={{ position: "fixed", inset: 0, zIndex: 99 }} />
+            <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, zIndex: 100, background: C.surface, border: `1.5px solid ${C.border}`, borderRadius: 12, padding: 6, minWidth: 160, boxShadow: "0 8px 32px rgba(0,0,0,0.5)", animation: "scaleIn 0.15s ease-out" }}>
+              <button onClick={() => { setShowMenu(false); navigate("/profile"); }} style={{ ...ui, width: "100%", textAlign: "left", padding: "10px 14px", borderRadius: 8, border: "none", background: "transparent", color: C.text, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,26,26,0.06)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
+                <span>◉</span> Profile
+              </button>
+              <div style={{ height: 1, background: C.border, margin: "4px 8px" }} />
+              <button onClick={() => { setShowMenu(false); onLogout(); }} style={{ ...ui, width: "100%", textAlign: "left", padding: "10px 14px", borderRadius: 8, border: "none", background: "transparent", color: C.redLight, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,26,26,0.08)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
+                <span>🚪</span> Logout
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </header>
   );
 }
 
 function Page({ children, maxWidth = 860 }: { children: React.ReactNode; maxWidth?: number }) {
-  return <main style={{ minHeight: "100vh", paddingTop: 80 }}><div style={{ maxWidth, margin: "0 auto", padding: "40px 24px 60px" }}>{children}</div></main>;
+  return <main style={{ minHeight: "100vh", paddingTop: 80 }}><div style={{ maxWidth, margin: "0 auto", padding: "40px 24px 60px", animation: "fadeIn 0.3s ease-out" }}>{children}</div></main>;
 }
 
 function PageHeader({ title, subtitle }: { title: string; subtitle?: string }) {
@@ -456,8 +482,10 @@ function HomeScreen({ xp, rank, playerName }: { xp: number; rank: Rank; playerNa
   return (
     <Page>
       {/* Hero profile card */}
-      <Card style={{ padding: "22px 26px", marginBottom: 28, borderLeft: `4px solid ${C.red}` }} glowColor={cfg.color}>
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+      <Card style={{ padding: "22px 26px", marginBottom: 28, borderLeft: `4px solid ${C.red}`, position: "relative", overflow: "hidden" }} glowColor={cfg.color}>
+        {/* Card shimmer accent */}
+        <div style={{ position: "absolute", top: 0, right: 0, width: 200, height: "100%", background: `linear-gradient(135deg, transparent, ${cfg.color}05)`, pointerEvents: "none" }} />
+        <div style={{ display: "flex", alignItems: "center", gap: 16, position: "relative" }}>
           <div style={{ position: "relative", flexShrink: 0 }}>
             <div style={{ width: 52, height: 52, borderRadius: 14, background: `linear-gradient(135deg, #1a0808, ${C.surface})`, border: `2px solid ${cfg.color}55`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, boxShadow: cfg.glow }}>🧑‍💻</div>
             <div style={{ position: "absolute", bottom: -5, right: -5 }}><RankBadge rank={rank} size={22} /></div>
@@ -481,17 +509,18 @@ function HomeScreen({ xp, rank, playerName }: { xp: number; rank: Rank; playerNa
       <div style={{ marginBottom: 28 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
           <SectionTitle>Your Languages</SectionTitle>
-          <button onClick={() => onNav("play")} style={{ ...ui, fontSize: 12, color: C.red, background: "none", border: "none", cursor: "pointer", fontWeight: 700, textShadow: `0 0 8px ${C.red}33` }}>+ Add language</button>
+          <button onClick={() => onNav("play")} style={{ ...ui, fontSize: 12, color: C.red, background: "rgba(255,26,26,0.06)", border: `1.5px solid ${C.red}33`, borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontWeight: 700 }}>+ Add language</button>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
           {langs.map((l, i) => (
-            <Card key={l.name} style={{ padding: 16, animation: `slideUp 0.4s ease-out ${i * 0.1}s both` }} onClick={() => onNav("mission")} glowColor={l.color}>
-              <div style={{ marginBottom: 10 }}>
-                <div style={{ ...ui, fontSize: 14, fontWeight: 800, color: C.text }}>{l.name}</div>
-                <div style={{ ...ui, fontSize: 11, color: C.textMuted, marginTop: 2 }}>{l.level}</div>
+            <Card key={l.name} style={{ padding: 18, animation: `slideUp 0.4s ease-out ${i * 0.1}s both`, position: "relative", overflow: "hidden" }} onClick={() => onNav("mission")} glowColor={l.color}>
+              <div style={{ position: "absolute", top: 0, right: 0, width: 60, height: 60, borderRadius: "50%", background: `radial-gradient(circle, ${l.color}10, transparent)`, transform: "translate(30%, -30%)" }} />
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ ...ui, fontSize: 15, fontWeight: 800, color: C.text }}>{l.name}</div>
+                <div style={{ ...ui, fontSize: 11, color: l.color, marginTop: 3, fontWeight: 600 }}>{l.level}</div>
               </div>
               <ProgressBar pct={l.pct} color={l.color} />
-              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10 }}>
                 <span style={{ ...mono, fontSize: 11, color: C.textMuted }}>{l.pct}%</span>
                 <span style={{ ...ui, fontSize: 11, color: l.color, fontWeight: 700 }}>Practice →</span>
               </div>
@@ -502,17 +531,18 @@ function HomeScreen({ xp, rank, playerName }: { xp: number; rank: Rank; playerNa
 
       {/* Explore */}
       <SectionTitle style={{ marginBottom: 14 }}>Explore</SectionTitle>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
         {[
           { label: "Daily Quest",  icon: "⚡", sub: "4 quests available",  color: C.red, screen: "daily" as Screen },
           { label: "Leaderboard",  icon: "★",  sub: "You are ranked #142", color: C.gold, screen: "leaderboard" as Screen },
           { label: "Achievements", icon: "🏆", sub: "4 of 8 unlocked",    color: C.green, screen: "achievements" as Screen },
         ].map((a, i) => (
-          <Card key={a.label} style={{ padding: 20, animation: `slideUp 0.4s ease-out ${(i + 4) * 0.1}s both` }} onClick={() => onNav(a.screen)} glowColor={a.color}>
-            <div style={{ fontSize: 28, marginBottom: 8, animation: "bounce 2s ease-in-out infinite", animationDelay: `${i * 0.3}s` }}>{a.icon}</div>
-            <div style={{ ...ui, fontSize: 14, fontWeight: 800, color: C.text }}>{a.label}</div>
-            <div style={{ ...ui, fontSize: 12, color: C.textMuted, marginTop: 3 }}>{a.sub}</div>
-            <div style={{ ...ui, fontSize: 12, color: a.color, marginTop: 10, fontWeight: 700 }}>View →</div>
+          <Card key={a.label} style={{ padding: 22, animation: `slideUp 0.4s ease-out ${(i + 4) * 0.1}s both`, position: "relative", overflow: "hidden" }} onClick={() => onNav(a.screen)} glowColor={a.color}>
+            <div style={{ position: "absolute", bottom: -10, right: -10, width: 80, height: 80, borderRadius: "50%", background: `radial-gradient(circle, ${a.color}0a, transparent)` }} />
+            <div style={{ fontSize: 32, marginBottom: 10, animation: "bounce 2s ease-in-out infinite", animationDelay: `${i * 0.3}s` }}>{a.icon}</div>
+            <div style={{ ...ui, fontSize: 15, fontWeight: 800, color: C.text }}>{a.label}</div>
+            <div style={{ ...ui, fontSize: 12, color: C.textMuted, marginTop: 4 }}>{a.sub}</div>
+            <div style={{ ...ui, fontSize: 12, color: a.color, marginTop: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>View <span style={{ transition: "transform 0.2s", display: "inline-block" }}>→</span></div>
           </Card>
         ))}
       </div>
@@ -983,7 +1013,7 @@ function AchievementsScreen() {
         const { data: { user }, error: authError } = await supabase.auth.getUser();
         if (authError || !user) {
           if (active) {
-            navigate("/login");
+            setLoading(false);
           }
           return;
         }
@@ -1170,15 +1200,13 @@ function DailyScreen() {
 
 // ─── Screen: Profile ──────────────────────────────────────────────────────────
 
-function ProfileScreen({ xp, rank, playerName, onNameChange }: { xp: number; rank: Rank; playerName: string; onNameChange: (name: string) => void }) {
+function ProfileScreen({ xp, rank, playerName, onNameChange, equippedBanner, setEquippedBanner, equippedAvatar, setEquippedAvatar }: { xp: number; rank: Rank; playerName: string; onNameChange: (name: string) => void; equippedBanner: string | null; setEquippedBanner: (v: string | null) => void; equippedAvatar: Rank | null; setEquippedAvatar: (v: Rank | null) => void }) {
   const cfg = RANKS[rank];
   const pct = Math.min(100, ((xp - cfg.min) / (cfg.max - cfg.min)) * 100);
   const rankKeys = Object.keys(RANKS) as Rank[];
   const nextRank = rankKeys[Math.min(rankKeys.indexOf(rank) + 1, rankKeys.length - 1)];
-  const [editing, setEditing] = useState(false);
+  const [editMode, setEditMode] = useState(false);
   const [nameInput, setNameInput] = useState(playerName);
-  const [equippedBanner, setEquippedBanner] = useState<string | null>(null);
-  const [equippedAvatar, setEquippedAvatar] = useState<Rank | null>(null);
 
   // Get all unlocked banners/avatars up to current rank
   const currentRankIdx = rankKeys.indexOf(rank);
@@ -1211,193 +1239,126 @@ function ProfileScreen({ xp, rank, playerName, onNameChange }: { xp: number; ran
   const avatarBorderColor = activeAvatarRank ? RANKS[activeAvatarRank].color : cfg.color;
 
   return (
-    <Page>
-      <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: 20, marginBottom: 20 }}>
-        <Card style={{ padding: 0, overflow: "hidden", borderLeft: `4px solid ${cfg.color}` }} glowColor={cfg.color}>
-          {/* Profile banner */}
-          <div style={{ height: 90, width: "100%", background: activeBanner ? activeBanner.gradient : `linear-gradient(135deg, #0a0a0a, ${C.surface})`, borderBottom: `1.5px solid ${cfg.color}22`, position: "relative", transition: "all 0.4s ease" }}>
-            {activeBanner && <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.3) 100%)" }} />}
-            {activeBanner && <div style={{ position: "absolute", bottom: 8, right: 10, ...pixel, fontSize: 6, color: "rgba(255,255,255,0.7)", background: "rgba(0,0,0,0.6)", padding: "3px 8px", borderRadius: 4, backdropFilter: "blur(4px)" }}>{activeBanner.name}</div>}
-          </div>
-          <div style={{ padding: "20px 26px 26px" }}>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, textAlign: "center", marginTop: -36 }}>
-              <div style={{ position: "relative" }}>
-                <div style={{ width: 100, height: 100, borderRadius: 22, background: `linear-gradient(135deg, #1a0808, ${C.surface})`, border: `3px solid ${avatarBorderColor}55`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 0 16px ${avatarBorderColor}44`, transition: "all 0.3s ease", overflow: "hidden" }}>
-                  {activeAvatarRank ? (
-                    <img src={RANK_ICONS[activeAvatarRank]} alt={activeAvatarRank} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  ) : (
-                    <span style={{ fontSize: 34 }}>🧑‍💻</span>
-                  )}
-                </div>
-                <div style={{ position: "absolute", bottom: -4, right: -4 }}><RankBadge rank={rank} size={24} /></div>
-              </div>
-              <div>
-                {editing ? (
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-                    <input
-                      value={nameInput}
-                      onChange={(e) => setNameInput(e.target.value.toUpperCase())}
-                      maxLength={16}
-                      autoFocus
-                      style={{ ...ui, fontSize: 16, fontWeight: 900, color: C.text, background: "rgba(255,26,26,0.05)", border: `1.5px solid ${C.red}44`, borderRadius: 8, padding: "6px 12px", textAlign: "center", outline: "none", width: "100%", boxSizing: "border-box" }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && nameInput.trim()) { onNameChange(nameInput.trim()); setEditing(false); }
-                        if (e.key === "Escape") { setNameInput(playerName); setEditing(false); }
-                      }}
-                    />
-                    <div style={{ display: "flex", gap: 6 }}>
-                      <button onClick={() => { if (nameInput.trim()) { onNameChange(nameInput.trim()); setEditing(false); } }}
-                        style={{ ...ui, fontSize: 10, fontWeight: 700, color: "#fff", background: C.red, border: "none", borderRadius: 6, padding: "4px 12px", cursor: "pointer" }}>Save</button>
-                      <button onClick={() => { setNameInput(playerName); setEditing(false); }}
-                        style={{ ...ui, fontSize: 10, fontWeight: 700, color: C.textMuted, background: "transparent", border: `1px solid ${C.border}`, borderRadius: 6, padding: "4px 12px", cursor: "pointer" }}>Cancel</button>
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                    <div style={{ ...ui, fontSize: 18, fontWeight: 900, color: C.text }}>{playerName}</div>
-                    <button onClick={() => setEditing(true)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: C.textMuted, padding: 2 }} title="Edit name">✏️</button>
-                  </div>
-                )}
-                <div style={{ ...ui, fontSize: 11, color: C.textMuted, marginTop: 2 }}>Joined June 2024 · #00142</div>
-                <span style={{ ...pixel, fontSize: 7, color: cfg.color, background: cfg.bg, border: `1.5px solid ${cfg.color}44`, padding: "4px 8px", borderRadius: 6, display: "inline-block", marginTop: 8 }}>{rank}</span>
-              </div>
-              <div style={{ width: "100%" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-                  <span style={{ ...ui, fontSize: 10, color: C.textMuted }}>→ {nextRank}</span>
-                  <span style={{ ...mono, fontSize: 10, color: cfg.color }}>{xp.toLocaleString()} XP</span>
-                </div>
-                <ProgressBar pct={pct} color={cfg.color} />
-                <div style={{ ...ui, fontSize: 10, color: C.textMuted, marginTop: 3, textAlign: "right" }}>{(cfg.max - xp).toLocaleString()} XP to go</div>
+    <Page maxWidth={920}>
+      {/* Main profile card — full width, prominent */}
+      <Card style={{ padding: 0, overflow: "hidden", marginBottom: 24, border: `1.5px solid ${cfg.color}22` }} glowColor={cfg.color}>
+        <div style={{ height: 160, width: "100%", background: activeBanner ? activeBanner.gradient : `linear-gradient(120deg, #0a0a0a 0%, #131318 30%, #1a1a22 50%, #131318 70%, #0a0a0a 100%)`, position: "relative", transition: "all 0.5s ease" }}>
+          {/* Banner overlay layers */}
+          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 30%, rgba(0,0,0,0.6) 100%)" }} />
+          {/* Animated shimmer on banner */}
+          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.03) 45%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.03) 55%, transparent 60%)", backgroundSize: "200% 100%", animation: "shimmer 6s linear infinite" }} />
+          {/* Decorative corner accents */}
+          <div style={{ position: "absolute", top: 12, left: 12, width: 40, height: 40, borderTop: `2px solid ${cfg.color}33`, borderLeft: `2px solid ${cfg.color}33`, borderRadius: "6px 0 0 0" }} />
+          <div style={{ position: "absolute", top: 12, right: 12, width: 40, height: 40, borderTop: `2px solid ${cfg.color}33`, borderRight: `2px solid ${cfg.color}33`, borderRadius: "0 6px 0 0" }} />
+          {/* Banner name tag */}
+          {activeBanner && <div style={{ position: "absolute", bottom: 12, right: 14, ...pixel, fontSize: 7, color: "rgba(255,255,255,0.7)", background: "rgba(0,0,0,0.6)", padding: "4px 12px", borderRadius: 6, backdropFilter: "blur(6px)", border: "1px solid rgba(255,255,255,0.1)" }}>{activeBanner.name}</div>}
+        </div>
+        <div style={{ padding: "20px 36px 36px" }}>
+          <div style={{ display: "flex", gap: 24 }}>
+            <div style={{ position: "relative", flexShrink: 0, marginTop: -70 }}>
+              <div style={{ width: 110, height: 110, borderRadius: 22, background: `linear-gradient(135deg, #0a0a0a, ${C.surface})`, border: `4px solid ${avatarBorderColor}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 0 24px ${avatarBorderColor}55, 0 8px 32px rgba(0,0,0,0.5)`, overflow: "hidden" }}>
+                {activeAvatarRank ? (<img src={RANK_ICONS[activeAvatarRank]} alt={activeAvatarRank} style={{ width: "100%", height: "100%", objectFit: "cover" }} />) : (<span style={{ fontSize: 44 }}>🧑‍💻</span>)}
               </div>
             </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6 }}>
+                <h2 style={{ ...ui, fontSize: 26, fontWeight: 900, color: C.text, margin: 0, letterSpacing: "-0.02em" }}>{playerName}</h2>
+                <span style={{ ...pixel, fontSize: 8, color: cfg.color, background: cfg.bg, border: `1.5px solid ${cfg.color}44`, padding: "5px 12px", borderRadius: 8, boxShadow: `0 0 10px ${cfg.color}22` }}>{rank}</span>
+              </div>
+              <div style={{ ...ui, fontSize: 13, color: C.textMuted, marginBottom: 14 }}>Joined June 2024 · #00142 · <span style={{ color: C.orange }}>🔥 7-day streak</span></div>
+              <div style={{ maxWidth: 380 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                  <span style={{ ...ui, fontSize: 11, color: C.textMuted }}>{rank === "Sirena" ? "✦ Max Rank" : `→ ${nextRank}`}</span>
+                  <span style={{ ...mono, fontSize: 11, color: cfg.color, fontWeight: 700 }}>{xp.toLocaleString()} / {cfg.max.toLocaleString()} XP</span>
+                </div>
+                <ProgressBar pct={pct} color={cfg.color} height={9} />
+                <div style={{ ...ui, fontSize: 10, color: C.textMuted, marginTop: 5 }}>{rank === "Sirena" ? "You've reached the top!" : `${(cfg.max - xp).toLocaleString()} XP to go`}</div>
+              </div>
+            </div>
+            <div style={{ flexShrink: 0 }}>
+              <Btn color={cfg.color} variant="outline" size="sm" onClick={() => setEditMode(true)}>✏️ Edit Profile</Btn>
+            </div>
           </div>
-        </Card>
+        </div>
+      </Card>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
-            {stats.map((s) => (
-              <Card key={s.label} style={{ padding: "16px 18px" }} glowColor={s.color}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 18 }}>{s.icon}</span>
-                  <div>
-                    <div style={{ ...mono, fontSize: 20, color: s.color, fontWeight: 800 }}>{s.val}</div>
-                    <div style={{ ...ui, fontSize: 10, color: C.textMuted, marginTop: 2 }}>{s.label}</div>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-          <Card style={{ padding: 18, flex: 1 }} glowColor={C.red}>
-            <div style={{ ...ui, fontSize: 13, fontWeight: 800, color: C.text, marginBottom: 12 }}>🛡️ Badges</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
-              {badges.map((b, i) => (
-                <div key={b.label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "12px 6px", borderRadius: 10, background: b.earned ? "rgba(255,26,26,0.04)" : "rgba(255,255,255,0.02)", opacity: b.earned ? 1 : 0.3, border: b.earned ? `1.5px solid ${C.red}22` : "1.5px solid transparent" }}>
-                  <span style={{ fontSize: 22, animation: b.earned ? "bounce 3s ease-in-out infinite" : "none", animationDelay: `${i * 0.3}s` }}>{b.icon}</span>
-                  <span style={{ ...ui, fontSize: 9, color: C.textMuted, textAlign: "center", fontWeight: 600 }}>{b.label}</span>
-                  {b.earned && <span style={{ ...ui, fontSize: 8, color: C.green, fontWeight: 700 }}>Unlocked</span>}
-                </div>
-              ))}
+      {/* Stats grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 24 }}>
+        {stats.map((s, i) => (
+          <Card key={s.label} style={{ padding: "22px 22px", animation: `slideUp 0.4s ease-out ${i * 0.08}s both`, position: "relative", overflow: "hidden" }} glowColor={s.color}>
+            <div style={{ position: "absolute", top: -10, right: -10, width: 50, height: 50, borderRadius: "50%", background: `radial-gradient(circle, ${s.color}12, transparent)` }} />
+            <div style={{ display: "flex", alignItems: "center", gap: 10, position: "relative" }}>
+              <span style={{ fontSize: 24 }}>{s.icon}</span>
+              <div>
+                <div style={{ ...mono, fontSize: 24, color: s.color, fontWeight: 800 }}>{s.val}</div>
+                <div style={{ ...ui, fontSize: 11, color: C.textMuted, marginTop: 2 }}>{s.label}</div>
+              </div>
             </div>
           </Card>
-        </div>
+        ))}
       </div>
 
-      {/* Banner selection */}
-      <Card style={{ padding: 22, marginBottom: 20 }} glowColor={cfg.color}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-          <div style={{ ...ui, fontSize: 14, fontWeight: 800, color: C.text }}>🎨 Profile Banners</div>
-          <span style={{ ...ui, fontSize: 11, color: C.textMuted }}>{unlockedBanners.length} unlocked</span>
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10 }}>
-          {/* None option */}
-          <div
-            onClick={() => setEquippedBanner(null)}
-            style={{ height: 72, borderRadius: 12, background: `linear-gradient(135deg, #0a0a0a, ${C.surface})`, border: `2px solid ${!equippedBanner ? C.red : C.border}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s", boxShadow: !equippedBanner ? `0 0 10px ${C.red}33` : "none" }}
-          >
-            <span style={{ ...ui, fontSize: 11, color: C.textMuted, fontWeight: 600 }}>None</span>
-          </div>
-          {unlockedBanners.map((b) => (
-            <div
-              key={b.name}
-              onClick={() => setEquippedBanner(b.name)}
-              style={{ height: 72, borderRadius: 12, background: b.gradient, border: `2px solid ${equippedBanner === b.name ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.06)"}`, cursor: "pointer", position: "relative", transition: "all 0.25s cubic-bezier(0.34,1.56,0.64,1)", boxShadow: equippedBanner === b.name ? `0 4px 20px rgba(0,0,0,0.4), inset 0 0 30px rgba(255,255,255,0.05)` : "0 2px 8px rgba(0,0,0,0.2)", transform: equippedBanner === b.name ? "scale(1.04)" : "scale(1)" }}
-            >
-              <div style={{ position: "absolute", inset: 0, borderRadius: 10, background: "linear-gradient(180deg, rgba(255,255,255,0.06) 0%, transparent 40%, rgba(0,0,0,0.3) 100%)" }} />
-              <div style={{ position: "absolute", bottom: 6, left: 8, ...ui, fontSize: 9, color: "rgba(255,255,255,0.85)", fontWeight: 700, textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}>{b.name}</div>
-              <div style={{ position: "absolute", top: 6, right: 8, ...pixel, fontSize: 6, color: RANKS[b.rank].color, opacity: 0.9, textShadow: `0 0 6px ${RANKS[b.rank].color}66` }}>{b.rank}</div>
-              {equippedBanner === b.name && <div style={{ position: "absolute", top: 6, left: 8, ...ui, fontSize: 8, color: "#fff", fontWeight: 800, textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>✓ Equipped</div>}
-            </div>
-          ))}
-          {/* Locked banners from higher ranks */}
-          {rankKeys.slice(currentRankIdx + 1).map((r) =>
-            RANK_BANNERS[r].map((b, bi) => (
-              <div
-                key={`locked-${r}-${bi}`}
-                style={{ height: 72, borderRadius: 12, background: "rgba(255,255,255,0.02)", border: `2px solid rgba(255,255,255,0.05)`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3, opacity: 0.4 }}
-              >
-                <span style={{ fontSize: 14 }}>🔒</span>
-                <span style={{ ...ui, fontSize: 8, color: "rgba(255,255,255,0.3)" }}>Reach {r}</span>
-              </div>
-            ))
-          )}
-          {/* Coming soon banners */}
-          {COMING_SOON_BANNERS.map((cs, i) => (
-            <div
-              key={`coming-soon-${i}`}
-              style={{ height: 72, borderRadius: 12, background: cs.gradient, border: `2px solid rgba(255,255,255,0.04)`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3, opacity: 0.3 }}
-            >
-              <span style={{ fontSize: 12 }}>🔒</span>
-              <span style={{ ...ui, fontSize: 7, color: "rgba(255,255,255,0.2)" }}>Coming soon</span>
+      {/* Badges */}
+      <Card style={{ padding: 22 }} glowColor={C.red}>
+        <div style={{ ...ui, fontSize: 14, fontWeight: 800, color: C.text, marginBottom: 14 }}>🛡️ Badges</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10 }}>
+          {badges.map((b, i) => (
+            <div key={b.label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "16px 8px", borderRadius: 12, background: b.earned ? "rgba(255,26,26,0.04)" : "rgba(255,255,255,0.02)", opacity: b.earned ? 1 : 0.3, border: b.earned ? `1.5px solid ${C.red}22` : "1.5px solid transparent" }}>
+              <span style={{ fontSize: 26, animation: b.earned ? "bounce 3s ease-in-out infinite" : "none", animationDelay: `${i * 0.3}s` }}>{b.icon}</span>
+              <span style={{ ...ui, fontSize: 10, color: C.textMuted, textAlign: "center", fontWeight: 600 }}>{b.label}</span>
+              {b.earned && <span style={{ ...ui, fontSize: 9, color: C.green, fontWeight: 700 }}>Unlocked</span>}
             </div>
           ))}
         </div>
       </Card>
 
-      {/* Avatar selection */}
-      <Card style={{ padding: 22, marginBottom: 20 }} glowColor={cfg.color}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-          <div style={{ ...ui, fontSize: 14, fontWeight: 800, color: C.text }}>🛡️ Rank Avatars</div>
-          <span style={{ ...ui, fontSize: 11, color: C.textMuted }}>{unlockedAvatars.length} unlocked</span>
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(90px, 1fr))", gap: 12 }}>
-          {/* Default avatar */}
-          <div
-            onClick={() => setEquippedAvatar(null)}
-            style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 8px", borderRadius: 12, cursor: "pointer", background: !equippedAvatar ? "rgba(255,26,26,0.06)" : "rgba(255,255,255,0.02)", border: `2px solid ${!equippedAvatar ? C.red : C.border}`, transition: "all 0.2s", boxShadow: !equippedAvatar ? `0 0 10px ${C.red}33` : "none" }}
-          >
-            <div style={{ width: 52, height: 52, borderRadius: 14, background: `linear-gradient(135deg, #1a0808, ${C.surface})`, border: `2.5px solid ${cfg.color}44`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26 }}>🧑‍💻</div>
-            <span style={{ ...ui, fontSize: 9, color: C.textMuted, fontWeight: 600 }}>Default</span>
-            {!equippedAvatar && <span style={{ ...ui, fontSize: 7, color: C.red, fontWeight: 700 }}>Equipped</span>}
+      {/* Edit Profile Modal */}
+      {editMode && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div onClick={() => setEditMode(false)} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)" }} />
+          <div style={{ position: "relative", width: "100%", maxWidth: 580, maxHeight: "85vh", overflowY: "auto", background: C.surface, border: `1.5px solid ${C.border}`, borderRadius: 20, padding: 28, boxShadow: "0 20px 60px rgba(0,0,0,0.6)" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+              <h3 style={{ ...ui, fontSize: 18, fontWeight: 900, color: C.text, margin: 0 }}>✏️ Edit Profile</h3>
+              <button onClick={() => setEditMode(false)} style={{ background: "rgba(255,26,26,0.08)", border: `1.5px solid ${C.border}`, borderRadius: 8, padding: "6px 12px", color: C.textMuted, cursor: "pointer", fontSize: 12, fontWeight: 700, ...ui }}>✕ Close</button>
+            </div>
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ ...ui, fontSize: 11, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Username</div>
+              <div style={{ display: "flex", gap: 10 }}>
+                <input value={nameInput} onChange={(e) => setNameInput(e.target.value.toUpperCase())} maxLength={16} style={{ ...ui, flex: 1, fontSize: 15, fontWeight: 800, color: C.text, background: "rgba(255,26,26,0.03)", border: `2px solid ${C.border}`, borderRadius: 10, padding: "10px 14px", outline: "none", boxSizing: "border-box" }} onKeyDown={(e) => { if (e.key === "Enter" && nameInput.trim()) { onNameChange(nameInput.trim()); setEditMode(false); } }} />
+                <Btn color={C.red} size="sm" onClick={() => { if (nameInput.trim()) { onNameChange(nameInput.trim()); setEditMode(false); } }}>Save</Btn>
+              </div>
+            </div>
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ ...ui, fontSize: 11, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Profile Banner</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+                <div onClick={() => setEquippedBanner(null)} style={{ height: 56, borderRadius: 10, background: `linear-gradient(135deg, #0a0a0a, ${C.surface})`, border: `2px solid ${!equippedBanner ? cfg.color : C.border}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ ...ui, fontSize: 10, color: C.textMuted }}>None</span></div>
+                {unlockedBanners.map((b) => (
+                  <div key={b.name} onClick={() => setEquippedBanner(b.name)} style={{ height: 56, borderRadius: 10, background: b.gradient, border: `2px solid ${equippedBanner === b.name ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.06)"}`, cursor: "pointer", position: "relative", transition: "all 0.2s", transform: equippedBanner === b.name ? "scale(1.03)" : "scale(1)" }}>
+                    <div style={{ position: "absolute", inset: 0, borderRadius: 8, background: "linear-gradient(180deg, rgba(255,255,255,0.05) 0%, transparent 40%, rgba(0,0,0,0.3) 100%)" }} />
+                    <div style={{ position: "absolute", bottom: 4, left: 6, ...ui, fontSize: 8, color: "rgba(255,255,255,0.8)", fontWeight: 700, textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}>{b.name}</div>
+                    {equippedBanner === b.name && <div style={{ position: "absolute", top: 4, left: 6, fontSize: 10 }}>✓</div>}
+                  </div>
+                ))}
+                {COMING_SOON_BANNERS.map((_, i) => (
+                  <div key={`cs-${i}`} style={{ height: 56, borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "2px solid rgba(255,255,255,0.04)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", opacity: 0.3 }}><span style={{ fontSize: 10 }}>🔒</span><span style={{ ...ui, fontSize: 7, color: "rgba(255,255,255,0.2)" }}>Soon</span></div>
+                ))}
+              </div>
+            </div>
+            <div>
+              <div style={{ ...ui, fontSize: 11, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Avatar</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10 }}>
+                <div onClick={() => setEquippedAvatar(null)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "8px", borderRadius: 10, cursor: "pointer", border: `2px solid ${!equippedAvatar ? cfg.color : C.border}`, background: !equippedAvatar ? "rgba(255,26,26,0.06)" : "transparent" }}><div style={{ width: 40, height: 40, borderRadius: 10, background: `linear-gradient(135deg, #1a0808, ${C.surface})`, border: `2px solid ${cfg.color}44`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🧑‍💻</div><span style={{ ...ui, fontSize: 8, color: C.textMuted }}>Default</span></div>
+                {unlockedAvatars.map((r) => (
+                  <div key={r} onClick={() => setEquippedAvatar(r)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "8px", borderRadius: 10, cursor: "pointer", border: `2px solid ${equippedAvatar === r ? RANKS[r].color : C.border}`, background: equippedAvatar === r ? RANKS[r].bg : "transparent", transition: "all 0.2s" }}><div style={{ width: 40, height: 40, borderRadius: 10, border: `2px solid ${RANKS[r].color}`, overflow: "hidden", boxShadow: equippedAvatar === r ? RANKS[r].glow : "none" }}><img src={RANK_ICONS[r]} alt={r} style={{ width: "100%", height: "100%", objectFit: "cover" }} /></div><span style={{ ...ui, fontSize: 8, color: RANKS[r].color, fontWeight: 600 }}>{r}</span></div>
+                ))}
+                {rankKeys.slice(currentRankIdx + 1).map((r) => (
+                  <div key={`l-${r}`} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "8px", borderRadius: 10, opacity: 0.3 }}><div style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "2px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ fontSize: 12 }}>🔒</span></div><span style={{ ...ui, fontSize: 8, color: "rgba(255,255,255,0.2)" }}>{r}</span></div>
+                ))}
+              </div>
+            </div>
           </div>
-          {/* Unlocked rank avatars */}
-          {unlockedAvatars.map((r) => (
-            <div
-              key={r}
-              onClick={() => setEquippedAvatar(r)}
-              style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 8px", borderRadius: 12, cursor: "pointer", background: equippedAvatar === r ? `${RANKS[r].bg}` : "rgba(255,255,255,0.02)", border: `2px solid ${equippedAvatar === r ? RANKS[r].color : C.border}`, transition: "all 0.2s", boxShadow: equippedAvatar === r ? `0 0 12px ${RANKS[r].color}44` : "none", transform: equippedAvatar === r ? "scale(1.03)" : "scale(1)" }}
-            >
-              <div style={{ width: 52, height: 52, borderRadius: 14, background: `linear-gradient(135deg, #0a0a0a, ${C.surface})`, border: `2.5px solid ${RANKS[r].color}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: RANKS[r].glow, overflow: "hidden" }}>
-                <img src={RANK_ICONS[r]} alt={r} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              </div>
-              <span style={{ ...ui, fontSize: 9, color: RANKS[r].color, fontWeight: 600 }}>{r}</span>
-              {equippedAvatar === r && <span style={{ ...ui, fontSize: 7, color: RANKS[r].color, fontWeight: 700 }}>Equipped</span>}
-            </div>
-          ))}
-          {/* Locked avatars from higher ranks */}
-          {rankKeys.slice(currentRankIdx + 1).map((r) => (
-            <div
-              key={`locked-av-${r}`}
-              style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 8px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: `2px solid rgba(255,255,255,0.05)`, opacity: 0.35 }}
-            >
-              <div style={{ width: 52, height: 52, borderRadius: 14, background: "rgba(255,255,255,0.02)", border: "2.5px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <span style={{ fontSize: 18, opacity: 0.4 }}>🔒</span>
-              </div>
-              <span style={{ ...ui, fontSize: 9, color: "rgba(255,255,255,0.2)", fontWeight: 600 }}>{r}</span>
-              <span style={{ ...ui, fontSize: 7, color: "rgba(255,255,255,0.15)" }}>Reach {RANKS[r].tier}</span>
-            </div>
-          ))}
         </div>
-      </Card>
+      )}
     </Page>
   );
 }
@@ -1407,15 +1368,41 @@ function ProfileScreen({ xp, rank, playerName, onNameChange }: { xp: number; ran
 export default function App() {
   const [xp, setXP] = useState(12000);
   const [playerName, setPlayerName] = useState("PLAYER_ONE");
+  const [equippedBanner, setEquippedBanner] = useState<string | null>(null);
+  const [equippedAvatar, setEquippedAvatar] = useState<Rank | null>(null);
   const rank = getRank(xp);
+  const navigate = useNavigate();
   const { pathname } = useLocation();
   const isLogin = pathname === "/" || pathname === "/login";
 
   return (
     <div style={{ ...ui, background: C.bg, minHeight: "100vh", color: C.text }}>
-      {/* Ambient red gradient — subtle presence */}
-      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, background: "radial-gradient(ellipse at 15% 0%, rgba(255,26,26,0.035) 0%, transparent 50%), radial-gradient(ellipse at 85% 100%, rgba(255,26,26,0.02) 0%, transparent 40%)" }} />
-      {!isLogin && <Navbar xp={xp} rank={rank} playerName={playerName} />}
+      {/* Ambient background layers — retro playful design */}
+      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }}>
+        {/* Base gradient orbs */}
+        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 15% 0%, rgba(255,26,26,0.04) 0%, transparent 50%), radial-gradient(ellipse at 85% 100%, rgba(255,26,26,0.025) 0%, transparent 40%), radial-gradient(ellipse at 50% 50%, rgba(79,195,247,0.015) 0%, transparent 60%)" }} />
+        {/* Retro grid */}
+        <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(255,26,26,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,26,26,0.03) 1px, transparent 1px)", backgroundSize: "80px 80px", maskImage: "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.5) 20%, rgba(0,0,0,0.5) 80%, transparent 100%)" }} />
+        {/* Scanlines */}
+        <div style={{ position: "absolute", inset: 0, backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px)", opacity: 0.5 }} />
+        {/* Corner accent glow top-left */}
+        <div style={{ position: "absolute", top: -100, left: -100, width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(255,26,26,0.06) 0%, transparent 70%)", animation: "float 15s ease-in-out infinite" }} />
+        {/* Corner accent glow bottom-right */}
+        <div style={{ position: "absolute", bottom: -100, right: -100, width: 350, height: 350, borderRadius: "50%", background: "radial-gradient(circle, rgba(79,195,247,0.04) 0%, transparent 70%)", animation: "float 18s ease-in-out infinite 3s" }} />
+        {/* Floating particles */}
+        <div style={{ position: "absolute", top: "20%", left: "10%", width: 4, height: 4, borderRadius: "50%", background: C.red, opacity: 0.15, animation: "float 6s ease-in-out infinite", boxShadow: `0 0 6px ${C.red}44` }} />
+        <div style={{ position: "absolute", top: "45%", right: "12%", width: 3, height: 3, borderRadius: "50%", background: C.cyan, opacity: 0.12, animation: "float 8s ease-in-out infinite 1s", boxShadow: `0 0 6px ${C.cyan}44` }} />
+        <div style={{ position: "absolute", top: "70%", left: "25%", width: 5, height: 5, borderRadius: "50%", background: C.gold, opacity: 0.1, animation: "float 7s ease-in-out infinite 2s", boxShadow: `0 0 8px ${C.gold}44` }} />
+        <div style={{ position: "absolute", top: "35%", left: "60%", width: 3, height: 3, borderRadius: "50%", background: C.red, opacity: 0.1, animation: "float 9s ease-in-out infinite 4s", boxShadow: `0 0 6px ${C.red}44` }} />
+        <div style={{ position: "absolute", top: "80%", right: "30%", width: 4, height: 4, borderRadius: "50%", background: C.orange, opacity: 0.08, animation: "float 11s ease-in-out infinite 5s", boxShadow: `0 0 6px ${C.orange}44` }} />
+        {/* Retro diagonal accent lines */}
+        <div style={{ position: "absolute", top: "5%", right: "5%", width: 120, height: 1, background: `linear-gradient(90deg, transparent, ${C.red}15, transparent)`, transform: "rotate(-45deg)", animation: "pulse 4s ease-in-out infinite" }} />
+        <div style={{ position: "absolute", bottom: "10%", left: "8%", width: 100, height: 1, background: `linear-gradient(90deg, transparent, ${C.cyan}12, transparent)`, transform: "rotate(30deg)", animation: "pulse 5s ease-in-out infinite 2s" }} />
+        <div style={{ position: "absolute", top: "50%", left: "3%", width: 80, height: 1, background: `linear-gradient(90deg, transparent, ${C.gold}10, transparent)`, transform: "rotate(-20deg)", animation: "pulse 6s ease-in-out infinite 1s" }} />
+        {/* Noise texture overlay */}
+        <div style={{ position: "absolute", inset: 0, opacity: 0.015, backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")" }} />
+      </div>
+      {!isLogin && <Navbar xp={xp} rank={rank} playerName={playerName} onLogout={async () => { await supabase.auth.signOut(); navigate("/login"); }} />}
       <div style={{ position: "relative", zIndex: 1 }}>
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
@@ -1428,7 +1415,7 @@ export default function App() {
           <Route path="/leaderboard"  element={<LeaderboardScreen />} />
           <Route path="/achievements" element={<AchievementsScreen />} />
           <Route path="/daily"        element={<DailyScreen />} />
-          <Route path="/profile"      element={<ProfileScreen xp={xp} rank={rank} playerName={playerName} onNameChange={setPlayerName} />} />
+          <Route path="/profile"      element={<ProfileScreen xp={xp} rank={rank} playerName={playerName} onNameChange={setPlayerName} equippedBanner={equippedBanner} setEquippedBanner={setEquippedBanner} equippedAvatar={equippedAvatar} setEquippedAvatar={setEquippedAvatar} />} />
           <Route path="*"             element={<Navigate to="/home" replace />} />
         </Routes>
       </div>
@@ -1436,13 +1423,21 @@ export default function App() {
         * { box-sizing: border-box; scrollbar-width: none; }
         *::-webkit-scrollbar { display: none; }
         select option { background: ${C.surface}; color: ${C.text}; }
+        button { transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1); }
+        button:hover { filter: brightness(1.1); }
+        button:active { transform: scale(0.97); }
+        img { transition: transform 0.3s ease; }
         @keyframes coinFly { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-160px) scale(1.4); opacity: 0; } }
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
         @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.9; transform: scale(1.03); } }
         @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
         @keyframes wiggle { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-3deg); } 75% { transform: rotate(3deg); } }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes slideDown { from { opacity: 0; transform: translateY(-16px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+        @keyframes glow { 0%, 100% { box-shadow: 0 0 5px rgba(255,26,26,0.2); } 50% { box-shadow: 0 0 20px rgba(255,26,26,0.4); } }
       `}</style>
     </div>
   );
