@@ -50,16 +50,27 @@ export function ProfileScreen({ xp, rank, playerName, onNameChange, equippedBann
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 30%, rgba(0,0,0,0.6) 100%)" }} />
           {/* Animated shimmer on banner */}
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.03) 45%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.03) 55%, transparent 60%)", backgroundSize: "200% 100%", animation: "shimmer 6s linear infinite" }} />
+          {/* Extra shimmer for diamond rank */}
+          {rank === "Sirena" && <div style={{ position: "absolute", inset: 0, background: "linear-gradient(250deg, transparent 30%, rgba(255,255,255,0.04) 45%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 55%, transparent 70%)", backgroundSize: "200% 100%", animation: "shimmer 4s linear infinite 1s" }} />}
+          {rank === "Sirena" && <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, transparent 60%, rgba(185,242,255,0.06) 80%, rgba(185,242,255,0.1) 100%)" }} />}
           {/* Decorative corner accents */}
           <div style={{ position: "absolute", top: 12, left: 12, width: 40, height: 40, borderTop: `2px solid ${cfg.color}33`, borderLeft: `2px solid ${cfg.color}33`, borderRadius: "6px 0 0 0" }} />
           <div style={{ position: "absolute", top: 12, right: 12, width: 40, height: 40, borderTop: `2px solid ${cfg.color}33`, borderRight: `2px solid ${cfg.color}33`, borderRadius: "0 6px 0 0" }} />
+          {/* Diamond sparkle particles */}
+          {rank === "Sirena" && <>
+            <div style={{ position: "absolute", top: "20%", left: "20%", width: 3, height: 3, borderRadius: "50%", background: "#fff", opacity: 0.6, animation: "pulse 2s ease-in-out infinite", boxShadow: "0 0 6px #fff" }} />
+            <div style={{ position: "absolute", top: "35%", right: "25%", width: 2, height: 2, borderRadius: "50%", background: "#fff", opacity: 0.4, animation: "pulse 2.5s ease-in-out infinite 0.5s", boxShadow: "0 0 4px #fff" }} />
+            <div style={{ position: "absolute", top: "50%", left: "45%", width: 2, height: 2, borderRadius: "50%", background: "#b9f2ff", opacity: 0.5, animation: "pulse 3s ease-in-out infinite 1s", boxShadow: "0 0 6px #b9f2ff" }} />
+            <div style={{ position: "absolute", top: "25%", right: "40%", width: 2, height: 2, borderRadius: "50%", background: "#fff", opacity: 0.3, animation: "pulse 2.2s ease-in-out infinite 1.5s", boxShadow: "0 0 4px #fff" }} />
+            <div style={{ position: "absolute", top: "60%", left: "30%", width: 2, height: 2, borderRadius: "50%", background: "#b9f2ff", opacity: 0.35, animation: "pulse 2.8s ease-in-out infinite 0.8s", boxShadow: "0 0 5px #b9f2ff" }} />
+          </>}
           {/* Banner name tag */}
           {activeBanner && <div style={{ position: "absolute", bottom: 12, right: 14, ...pixel, fontSize: 7, color: "rgba(255,255,255,0.7)", background: "rgba(0,0,0,0.6)", padding: "4px 12px", borderRadius: 6, backdropFilter: "blur(6px)", border: "1px solid rgba(255,255,255,0.1)" }}>{activeBanner.name}</div>}
         </div>
         <div style={{ padding: "20px 24px 36px" }}>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 20 }}>
             <div style={{ position: "relative", flexShrink: 0, marginTop: -70 }}>
-              <div style={{ width: 110, height: 110, borderRadius: 22, background: `linear-gradient(135deg, #0a0a0a, ${C.surface})`, border: `4px solid ${avatarBorderColor}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 0 24px ${avatarBorderColor}55, 0 8px 32px rgba(0,0,0,0.5)`, overflow: "hidden" }}>
+              <div style={{ position: "relative", width: 110, height: 110, borderRadius: 22, background: `linear-gradient(135deg, #0a0a0a, ${C.surface})`, border: `4px solid ${avatarBorderColor}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: rank === "Sirena" ? `0 0 30px ${avatarBorderColor}66, 0 0 60px ${avatarBorderColor}22, 0 8px 32px rgba(0,0,0,0.5)` : `0 0 24px ${avatarBorderColor}55, 0 8px 32px rgba(0,0,0,0.5)`, overflow: "hidden" }}>
                 {activeAvatarRank ? (<img src={RANK_ICONS[activeAvatarRank]} alt={activeAvatarRank} style={{ width: "100%", height: "100%", objectFit: "cover" }} />) : (<span style={{ fontSize: 44 }}>🧑‍💻</span>)}
               </div>
             </div>
