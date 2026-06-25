@@ -244,6 +244,7 @@ function PageHeader({ title, subtitle }: { title: string; subtitle?: string }) {
 // ─── Screen: Login ────────────────────────────────────────────────────────────
 
 const LANGUAGES = ["Cebuano", "Ilocano", "Hiligaynon", "Waray", "Kapampangan", "Pangasinan", "Tagalog", "English", "Other"];
+const CITIES = ["Quezon City", "Manila", "Cebu City", "Davao City", "Pasig", "Makati", "Baguio", "Other"];
 
 function Select({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: string[] }) {
   const [focused, setFocused] = useState(false);
@@ -273,6 +274,7 @@ function LoginScreen() {
   const [age, setAge]                   = useState("");
   const [sex, setSex]                   = useState("");
   const [motherTongue, setMotherTongue] = useState("");
+  const [city, setCity]                 = useState("");
   const [error, setError]               = useState("");
   const [loading, setLoading]           = useState(false);
 
@@ -288,13 +290,13 @@ function LoginScreen() {
   };
 
   const handleSignup = async () => {
-    if (!username || !age || !sex || !motherTongue) { setError("Please fill in all fields."); return; }
+    if (!username || !age || !sex || !motherTongue || !city) { setError("Please fill in all fields."); return; }
     if (pw !== confirmPw) { setError("Passwords do not match."); return; }
     setError(""); setLoading(true);
     const { data, error: err } = await supabase.auth.signUp({
       email,
       password: pw,
-      options: { data: { username, age: Number(age), sex, mother_tongue: motherTongue } },
+      options: { data: { username, age: Number(age), sex, mother_tongue: motherTongue, city } },
     });
     setLoading(false);
     if (err) { setError(err.message); return; }
@@ -343,6 +345,7 @@ function LoginScreen() {
                 <Input label="Age" type="number" value={age} onChange={setAge} placeholder="18" />
                 <Select label="Sex" value={sex} onChange={setSex} options={["Male", "Female", "Non-binary", "Prefer not to say"]} />
                 <Select label="Mother Tongue" value={motherTongue} onChange={setMotherTongue} options={LANGUAGES} />
+                <Select label="City" value={city} onChange={setCity} options={CITIES} />
               </>
             )}
             <Input label="Email" value={email} onChange={setEmail} placeholder="player@sirene.ph" />
@@ -382,12 +385,39 @@ function HomeScreen({ xp, rank, playerName }: { xp: number; rank: Rank; playerNa
   const rankKeys = Object.keys(RANKS) as Rank[];
   const nextRank = rankKeys[Math.min(rankKeys.indexOf(rank) + 1, rankKeys.length - 1)];
 
-  const langs = [
-    { name: "Bisaya",      level: "Intermediate", pct: 68, color: C.red },
-    { name: "Cebuano",     level: "Advanced",     pct: 85, color: C.cyan },
-    { name: "Kapampangan", level: "Beginner",     pct: 24, color: C.gold },
-    { name: "Ilocano",     level: "Beginner",     pct: 10, color: C.orange },
-  ];
+  const [langs, setLangs] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchProgress = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const { data, error } = await supabase
+          .from("user_language_progress")
+          .select("*")
+          .eq("user_id", user.id);
+        if (!error && data && data.length > 0) {
+          const mapped = data.map((l: any) => ({
+            name: l.language,
+            level: l.level,
+            pct: Math.min(100, Math.round((Number(l.xp) / 3000.0) * 100)),
+            color: l.language === "Bisaya" ? C.red : l.language === "Cebuano" ? C.cyan : l.language === "Kapampangan" ? C.gold : C.orange
+          }));
+          setLangs(mapped);
+        } else {
+          setLangs([
+            { name: "Bisaya",      level: "Intermediate", pct: 68, color: C.red },
+            { name: "Cebuano",     level: "Advanced",     pct: 85, color: C.cyan },
+            { name: "Kapampangan", level: "Beginner",     pct: 24, color: C.gold },
+            { name: "Ilocano",     level: "Beginner",     pct: 10, color: C.orange },
+          ]);
+        }
+      } catch (err) {
+        console.error("Home fetch progress error:", err);
+      }
+    };
+    fetchProgress();
+  }, []);
 
   return (
     <Page>
@@ -463,13 +493,13 @@ const SOURCE_PHRASES: Record<string, string[]> = {
   Tagalog: ["Kumain ka na ba?", "Magandang umaga, kumusta ka?", "Saan ka pupunta?", "Masaya akong makita ka.", "Ano ang pangalan mo?", "Maraming salamat."],
 };
 
-function PlayScreen() {
+function PlayScreen({ setChallengePhrase }: { setChallengePhrase: (p: any) => void }) {
   const navigate = useNavigate();
-  const onNav = (s: Screen) => navigate(`/${s}`);
   const [from, setFrom] = useState("English");
   const [to, setTo] = useState("Bisaya");
   const [diff, setDiff] = useState("Normal");
   const [phraseIdx, setPhraseIdx] = useState(0);
+  const [loading, setLoading] = useState(false);
 
   const sources = ["English", "Tagalog"];
   const targets = ["Bisaya", "Cebuano", "Kapampangan", "Ilocano", "Waray", "Hiligaynon", "Bicolano", "Tagalog"];
@@ -488,6 +518,71 @@ function PlayScreen() {
     border: `2px solid ${C.border}`, borderRadius: 12,
     padding: "12px 36px 12px 14px", color: C.text, fontSize: 14,
     outline: "none", cursor: "pointer", appearance: "none",
+  };
+
+  const handleStartChallenge = async () => {
+    setLoading(true);
+    try {
+      let phraseId = null;
+      const { data, error } = await supabase
+        .from("phrases")
+        .select("*")
+        .eq("source_text", activePhraseText)
+        .eq("target_language", to)
+        .maybeSingle();
+
+      if (!error && data) {
+        phraseId = data.id;
+        setChallengePhrase({
+          id: phraseId,
+          text: activePhraseText,
+          source_language: from,
+          target_language: to,
+          difficulty: diff,
+          target_text_suggestion: data.target_text_suggestion,
+          transliteration: data.transliteration
+        });
+      } else {
+        const maxPoints = diff === "Easy" ? 25 : diff === "Normal" ? 50 : diff === "Hard" ? 75 : 100;
+        const { data: newPhrase, error: insError } = await supabase
+          .from("phrases")
+          .insert({
+            source_language: from,
+            target_language: to,
+            source_text: activePhraseText,
+            difficulty: diff,
+            points: maxPoints
+          })
+          .select("*")
+          .single();
+
+        if (!insError && newPhrase) {
+          phraseId = newPhrase.id;
+          setChallengePhrase({
+            id: phraseId,
+            text: activePhraseText,
+            source_language: from,
+            target_language: to,
+            difficulty: diff,
+            target_text_suggestion: newPhrase.target_text_suggestion,
+            transliteration: newPhrase.transliteration
+          });
+        }
+      }
+      navigate("/mission");
+    } catch (err) {
+      console.error("Error setting up phrase:", err);
+      setChallengePhrase({
+        id: null,
+        text: activePhraseText,
+        source_language: from,
+        target_language: to,
+        difficulty: diff,
+      });
+      navigate("/mission");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -542,7 +637,9 @@ function PlayScreen() {
               ))}
             </div>
           </div>
-          <Btn color={C.red} onClick={() => onNav("mission")} full size="lg">⚔️  Start Challenge</Btn>
+          <Btn color={C.red} onClick={handleStartChallenge} full size="lg" disabled={loading}>
+            {loading ? "⚔️ Starting..." : "⚔️  Start Challenge"}
+          </Btn>
         </div>
       </Card>
 
@@ -564,7 +661,7 @@ function PlayScreen() {
 
 // ─── Screen: Mission ──────────────────────────────────────────────────────────
 
-function MissionScreen() {
+function MissionScreen({ challengePhrase }: { challengePhrase: any }) {
   const navigate = useNavigate();
   const onNav = (s: Screen) => navigate(`/${s}`);
   const [idx, setIdx] = useState(0);
@@ -573,41 +670,50 @@ function MissionScreen() {
     { src: "Asan ka na?", tgt: "Hain ka na?", rom: "Where are you now?" },
     { src: "Magandang umaga.", tgt: "Maayong buntag.", rom: "Good morning." },
   ];
-  const p = phrases[idx];
+
+  const activeSrc = challengePhrase?.text || phrases[idx].src;
+  const activeTgtLang = challengePhrase?.target_language || "Bisaya";
+  const activeDiff = challengePhrase?.difficulty || "Normal";
+  const activeTgtSuggestion = challengePhrase?.target_text_suggestion || (challengePhrase ? "" : phrases[idx].tgt);
+  const activeTransliteration = challengePhrase?.transliteration || (challengePhrase ? "" : phrases[idx].rom);
 
   return (
     <Page maxWidth={660}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
         <div>
           <h1 style={{ ...ui, fontSize: 24, fontWeight: 900, color: C.text, margin: 0 }}>⚔️ Phrase Challenge</h1>
-          <p style={{ ...ui, fontSize: 13, color: C.textMuted, margin: "4px 0 0" }}>Tagalog → Bisaya · Normal</p>
+          <p style={{ ...ui, fontSize: 13, color: C.textMuted, margin: "4px 0 0" }}>{challengePhrase?.source_language || "Tagalog"} → {activeTgtLang} · {activeDiff}</p>
         </div>
         <span style={{ ...pixel, fontSize: 8, color: C.red, background: `rgba(255,26,26,0.1)`, border: `1.5px solid ${C.red}33`, padding: "6px 12px", borderRadius: 8, boxShadow: `0 0 8px ${C.red}22` }}>LVL 4-2</span>
       </div>
 
       <div style={{ marginBottom: 24 }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-          <span style={{ ...ui, fontSize: 12, color: C.textMuted }}>Phrase {idx + 1} of {phrases.length}</span>
-          <span style={{ ...mono, fontSize: 12, color: C.red }}>{Math.round((idx / phrases.length) * 100)}%</span>
+          <span style={{ ...ui, fontSize: 12, color: C.textMuted }}>Phrase {challengePhrase ? 1 : idx + 1} of {challengePhrase ? 1 : phrases.length}</span>
+          <span style={{ ...mono, fontSize: 12, color: C.red }}>{challengePhrase ? "100" : Math.round((idx / phrases.length) * 100)}%</span>
         </div>
-        <ProgressBar pct={(idx / phrases.length) * 100} color={C.red} height={8} />
+        <ProgressBar pct={challengePhrase ? 100 : (idx / phrases.length) * 100} color={C.red} height={8} />
       </div>
 
       <Card style={{ padding: 28, marginBottom: 18, borderLeft: `4px solid ${C.red}` }} glowColor={C.red}>
         <div style={{ ...pixel, fontSize: 8, color: C.textMuted, letterSpacing: "0.08em", marginBottom: 12 }}>TRANSLATE THIS</div>
-        <p style={{ ...ui, fontSize: 22, fontWeight: 800, color: C.text, lineHeight: 1.5, marginBottom: 22 }}>"{p.src}"</p>
-        <div style={{ background: "rgba(255,26,26,0.05)", border: `2px solid ${C.red}22`, borderRadius: 14, padding: 18 }}>
-          <div style={{ ...ui, fontSize: 11, color: C.textMuted, marginBottom: 5 }}>Bisaya translation</div>
-          <div style={{ ...ui, fontSize: 22, color: C.redLight, fontWeight: 800, marginBottom: 4 }}>{p.tgt}</div>
-          <div style={{ ...mono, fontSize: 12, color: C.textMuted }}>{p.rom}</div>
-        </div>
+        <p style={{ ...ui, fontSize: 22, fontWeight: 800, color: C.text, lineHeight: 1.5, marginBottom: 22 }}>"{activeSrc}"</p>
+        {activeTgtSuggestion && (
+          <div style={{ background: "rgba(255,26,26,0.05)", border: `2px solid ${C.red}22`, borderRadius: 14, padding: 18 }}>
+            <div style={{ ...ui, fontSize: 11, color: C.textMuted, marginBottom: 5 }}>{activeTgtLang} translation suggestion</div>
+            <div style={{ ...ui, fontSize: 22, color: C.redLight, fontWeight: 800, marginBottom: 4 }}>{activeTgtSuggestion}</div>
+            {activeTransliteration && <div style={{ ...mono, fontSize: 12, color: C.textMuted }}>{activeTransliteration}</div>}
+          </div>
+        )}
       </Card>
 
       <div style={{ display: "flex", gap: 10 }}>
         <Btn color={C.cyan} variant="outline" size="md" onClick={() => {}}>♪ Listen</Btn>
         <Btn color={C.red} size="md" onClick={() => onNav("recording")}>● Record</Btn>
         <div style={{ flex: 1 }} />
-        <Btn color={C.textMuted} variant="ghost" size="md" onClick={() => setIdx((i) => Math.min(i + 1, phrases.length - 1))}>Skip ▶</Btn>
+        {!challengePhrase && (
+          <Btn color={C.textMuted} variant="ghost" size="md" onClick={() => setIdx((i) => Math.min(i + 1, phrases.length - 1))}>Skip ▶</Btn>
+        )}
       </div>
     </Page>
   );
@@ -615,7 +721,7 @@ function MissionScreen() {
 
 // ─── Screen: Recording ────────────────────────────────────────────────────────
 
-function RecordingScreen() {
+function RecordingScreen({ challengePhrase }: { challengePhrase: any }) {
   const navigate = useNavigate();
   const onNav = (s: Screen) => navigate(`/${s}`);
   const [phase, setPhase] = useState<"idle" | "rec" | "done">("idle");
@@ -657,22 +763,88 @@ function RecordingScreen() {
 
 // ─── Screen: Evaluation ───────────────────────────────────────────────────────
 
-function EvaluationScreen({ onXP }: { onXP: (n: number) => void }) {
+function EvaluationScreen({ challengePhrase, user, refreshProfile }: { challengePhrase: any; user: any; refreshProfile: () => void }) {
   const navigate = useNavigate();
   const onNav = (s: Screen) => navigate(`/${s}`);
   const [coinsVisible, setCoinsVisible] = useState(false);
-  useEffect(() => { const t = setTimeout(() => setCoinsVisible(true), 300); return () => clearTimeout(t); }, []);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setCoinsVisible(true), 300);
+    return () => clearTimeout(t);
+  }, []);
+
+  // ── Extract Gemini scores from challengePhrase or use mock fallbacks ──
+  const gemini = challengePhrase?.geminiResult;
+  const fluency        = gemini?.fluency         ?? 82;
+  const pronunciation  = gemini?.pronunciation   ?? 88;
+  const completeness   = gemini?.completeness    ?? 91;
+  const accuracy       = gemini?.accuracy        ?? 75;
+  const overallScore   = gemini?.overall_score   ?? Math.round((fluency + pronunciation + completeness + accuracy) / 4);
+  const aiFeedback     = gemini?.feedback        ?? null;
+  const transcription  = gemini?.transcription   ?? challengePhrase?.text ?? "";
+  const clipId         = gemini?.clip_id         ?? null;
 
   const scores = [
-    { label: "Pronunciation", val: 88, color: C.cyan },
-    { label: "Accuracy",      val: 75, color: C.red },
-    { label: "Fluency",       val: 82, color: C.gold },
-    { label: "Timing",        val: 91, color: C.green },
+    { label: "Pronunciation", val: pronunciation, color: C.cyan },
+    { label: "Accuracy",      val: accuracy,      color: C.red },
+    { label: "Fluency",       val: fluency,       color: C.gold },
+    { label: "Completeness",  val: completeness,  color: C.green },
   ];
-  const total = Math.round(scores.reduce((a, s) => a + s.val, 0) / scores.length);
-  const xp = Math.round(total * 1.5);
-  const grade = total >= 90 ? "S" : total >= 80 ? "A" : total >= 70 ? "B" : total >= 60 ? "C" : "D";
-  const gc = total >= 80 ? C.green : total >= 60 ? C.gold : C.red;
+
+  // ── Difficulty-based XP calculation ──
+  const difficultyLabel = challengePhrase?.difficulty || "Normal";
+  const maxPoints = difficultyLabel === "Easy" ? 25 : difficultyLabel === "Normal" ? 50 : difficultyLabel === "Hard" ? 75 : 100;
+  const xp = Number(((overallScore / 100.0) * maxPoints).toFixed(1));
+  const grade = overallScore >= 90 ? "S" : overallScore >= 80 ? "A" : overallScore >= 70 ? "B" : overallScore >= 60 ? "C" : "D";
+  const gc = overallScore >= 80 ? C.green : overallScore >= 60 ? C.gold : C.red;
+
+  // ── Save attempt to Supabase ──
+  useEffect(() => {
+    const saveAttempt = async () => {
+      if (!user || !challengePhrase?.id || saved) return;
+      setSaving(true);
+      try {
+        const { error } = await supabase
+          .from("user_phrase_attempts")
+          .insert({
+            user_id: user.id,
+            phrase_id: challengePhrase.id,
+            clip_id: clipId,
+            transcription: transcription,
+            fluency_score: fluency,
+            pronunciation_score: pronunciation,
+            completeness_score: completeness,
+            accuracy_score: accuracy,
+            overall_score: overallScore,
+            points_earned: xp,
+            feedback: aiFeedback || ("Great effort! " + (overallScore >= 90 ? "Phrase mastered!" : "Try again to reach 90+."))
+          });
+        if (error) {
+          console.error("Save attempt error:", error);
+        } else {
+          setSaved(true);
+          refreshProfile();
+        }
+      } catch (err) {
+        console.error("Save attempt error:", err);
+      } finally {
+        setSaving(false);
+      }
+    };
+    saveAttempt();
+  }, [user, challengePhrase, saved]);
+
+  // ── Feedback items ──
+  const feedbackItems = aiFeedback
+    ? [{ text: aiFeedback, positive: overallScore >= 70 }]
+    : [
+        { text: pronunciation >= 80 ? "Great pronunciation!" : "Work on your pronunciation.", positive: pronunciation >= 80 },
+        { text: accuracy >= 80 ? "High accuracy — well done!" : "Try to improve word accuracy.", positive: accuracy >= 80 },
+        { text: fluency >= 80 ? "Smooth and fluent delivery!" : "Work on tonal patterns and flow.", positive: fluency >= 80 },
+        { text: completeness >= 90 ? "Complete phrase captured!" : "Try to say the full phrase clearly.", positive: completeness >= 90 },
+      ];
 
   return (
     <Page maxWidth={660}>
@@ -682,14 +854,30 @@ function EvaluationScreen({ onXP }: { onXP: (n: number) => void }) {
         </div>
       )}
 
+      {/* Challenge context banner */}
+      <Card style={{ padding: "12px 18px", marginBottom: 18, display: "flex", alignItems: "center", justifyContent: "space-between", borderLeft: `4px solid ${gc}` }} glowColor={gc}>
+        <div>
+          <div style={{ ...ui, fontSize: 11, color: C.textMuted }}>
+            {challengePhrase?.source_language || "Tagalog"} → {challengePhrase?.target_language || "Bisaya"} · {difficultyLabel}
+          </div>
+          <div style={{ ...ui, fontSize: 13, fontWeight: 700, color: C.text, marginTop: 2 }}>"{challengePhrase?.text || "Phrase"}"</div>
+        </div>
+        <div style={{ ...pixel, fontSize: 8, color: gc, background: `${gc}18`, border: `1.5px solid ${gc}33`, padding: "5px 10px", borderRadius: 6 }}>
+          {maxPoints} MAX PTS
+        </div>
+      </Card>
+
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 18 }}>
         <Card style={{ padding: 28, textAlign: "center", borderTop: `3px solid ${gc}` }} glowColor={gc}>
           <div style={{ ...pixel, fontSize: 8, color: C.textMuted, letterSpacing: "0.08em", marginBottom: 12 }}>MISSION COMPLETE</div>
           <div style={{ fontSize: 80, fontWeight: 900, color: gc, lineHeight: 1, marginBottom: 6, ...ui, textShadow: `0 0 30px ${gc}66`, animation: "bounce 1s ease-in-out" }}>{grade}</div>
-          <div style={{ ...mono, fontSize: 26, color: C.text }}>{total}/100</div>
+          <div style={{ ...mono, fontSize: 26, color: C.text }}>{overallScore}/100</div>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 5, marginTop: 12, padding: "6px 14px", borderRadius: 50, background: "rgba(255,215,0,0.1)", border: "1.5px solid rgba(255,215,0,0.25)", animation: "wiggle 1s ease-in-out infinite" }}>
             <span>🪙</span><span style={{ ...ui, fontSize: 13, fontWeight: 800, color: C.gold }}>+{xp} XP</span>
           </div>
+          {overallScore >= 90 && (
+            <div style={{ ...ui, fontSize: 11, color: C.green, fontWeight: 700, marginTop: 8, animation: "pulse 1.5s ease-in-out infinite" }}>🎯 Phrase Mastered!</div>
+          )}
         </Card>
         <Card style={{ padding: 22 }} glowColor={C.red}>
           <div style={{ ...ui, fontSize: 14, fontWeight: 800, color: C.text, marginBottom: 14 }}>Score Breakdown</div>
@@ -704,24 +892,50 @@ function EvaluationScreen({ onXP }: { onXP: (n: number) => void }) {
               </div>
             ))}
           </div>
+          {/* XP calculation breakdown */}
+          <div style={{ marginTop: 14, padding: "10px 12px", borderRadius: 8, background: "rgba(255,215,0,0.05)", border: "1px solid rgba(255,215,0,0.12)" }}>
+            <div style={{ ...mono, fontSize: 10, color: C.textMuted }}>
+              {overallScore}% of {maxPoints} pts ({difficultyLabel}) = <span style={{ color: C.gold, fontWeight: 800 }}>{xp} XP</span>
+            </div>
+          </div>
         </Card>
       </div>
 
       <Card style={{ padding: 22, marginBottom: 18 }}>
         <div style={{ ...ui, fontSize: 14, fontWeight: 800, color: C.text, marginBottom: 12 }}>🤖 AI Feedback</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {["Great pronunciation on vowels!", "Work on tonal patterns.", "Fluency improved +12% this week.", "Practice consonant clusters more."].map((f, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "8px 12px", borderRadius: 8, background: i === 0 || i === 2 ? "rgba(76,175,125,0.06)" : "rgba(255,26,26,0.04)", border: `1px solid ${i === 0 || i === 2 ? "rgba(76,175,125,0.15)" : "rgba(255,26,26,0.1)"}` }}>
-              <span style={{ fontSize: 13 }}>{i === 0 || i === 2 ? "✅" : "⚠️"}</span>
-              <span style={{ ...ui, fontSize: 13, color: C.text, lineHeight: 1.5 }}>{f}</span>
+          {saving ? (
+            <div style={{ ...ui, fontSize: 13, color: C.textMuted, display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ animation: "pulse 1s ease-in-out infinite" }}>⏳</span> Saving attempt to database...
             </div>
-          ))}
+          ) : (
+            feedbackItems.map((f, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "8px 12px", borderRadius: 8, background: f.positive ? "rgba(76,175,125,0.06)" : "rgba(255,26,26,0.04)", border: `1px solid ${f.positive ? "rgba(76,175,125,0.15)" : "rgba(255,26,26,0.1)"}` }}>
+                <span style={{ fontSize: 13 }}>{f.positive ? "✅" : "⚠️"}</span>
+                <span style={{ ...ui, fontSize: 13, color: C.text, lineHeight: 1.5 }}>{f.text}</span>
+              </div>
+            ))
+          )}
         </div>
+        {saved && (
+          <div style={{ ...ui, fontSize: 11, color: C.green, fontWeight: 700, marginTop: 10, display: "flex", alignItems: "center", gap: 6 }}>
+            <span>✓</span> Score saved to your profile
+          </div>
+        )}
       </Card>
 
+      {/* Transcription display (from Gemini) */}
+      {transcription && (
+        <Card style={{ padding: 18, marginBottom: 18, borderLeft: `4px solid ${C.cyan}` }} glowColor={C.cyan}>
+          <div style={{ ...ui, fontSize: 11, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>What Gemini Heard</div>
+          <div style={{ ...ui, fontSize: 15, color: C.text, fontWeight: 600, fontStyle: "italic" }}>"{transcription}"</div>
+        </Card>
+      )}
+
       <div style={{ display: "flex", gap: 10 }}>
-        <Btn color={C.textMuted} variant="outline" size="md" onClick={() => { onXP(xp); onNav("home"); }}>← Home</Btn>
-        <Btn color={C.red} size="md" onClick={() => onNav("mission")}>Next Phrase →</Btn>
+        <Btn color={C.textMuted} variant="outline" size="md" onClick={() => onNav("home")}>← Home</Btn>
+        <Btn color={C.gold} variant="outline" size="md" onClick={() => onNav("leaderboard")}>★ Leaderboard</Btn>
+        <Btn color={C.red} size="md" onClick={() => onNav("play")}>Next Challenge →</Btn>
       </div>
     </Page>
   );
@@ -735,88 +949,54 @@ function LeaderboardScreen() {
   type Lang = typeof languages[number];
   const [mainTab, setMainTab] = useState<MainTab>("global");
   const [selectedLang, setSelectedLang] = useState<Lang>("Bisaya");
+  const [selectedCity, setSelectedCity] = useState("Global");
+  const [players, setPlayers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  // Player data per language
-  type PlayerEntry = { name: string; xp: number; rank: Rank; flag: string; streak: number; avatar: string; me: boolean };
-  const globalData: PlayerEntry[] = [
-      { name: "PIXEL_MASTER",  xp: 14200, rank: "Sirena",      flag: "🇵🇭", streak: 45, avatar: "🧑",   me: false },
-      { name: "NEON_LINGUIST", xp: 11800, rank: "Sirena",      flag: "🇵🇭", streak: 32, avatar: "👩",   me: false },
-      { name: "ARCADE_NINJA",  xp: 9600,  rank: "Aswang",      flag: "🇵🇭", streak: 28, avatar: "🧙",   me: false },
-      { name: "BYTE_SPEAKER",  xp: 8200,  rank: "Aswang",      flag: "🇵🇭", streak: 21, avatar: "🤖",   me: false },
-      { name: "GLITCH_TONGUE", xp: 5900,  rank: "Manananggal", flag: "🇵🇭", streak: 15, avatar: "🦊",   me: false },
-      { name: "PLAYER_ONE",    xp: 4750,  rank: "Manananggal", flag: "🇵🇭", streak: 7,  avatar: "🧑‍💻", me: true  },
-      { name: "RETRO_TALKER",  xp: 2300,  rank: "Tikbalang",   flag: "🇵🇭", streak: 9,  avatar: "🎮",   me: false },
-      { name: "LANG_ROOKIE",   xp: 800,   rank: "Nuno",        flag: "🇵🇭", streak: 3,  avatar: "🌱",   me: false },
-    ];
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setCurrentUserId(user?.id || null);
+    });
+  }, []);
 
-  const languageData: Record<Lang, PlayerEntry[]> = {
-    Bisaya: [
-      { name: "CEBU_KING",     xp: 12400, rank: "Sirena",      flag: "🇵🇭", streak: 50, avatar: "👑",   me: false },
-      { name: "VISAYAN_PRO",   xp: 9800,  rank: "Aswang",      flag: "🇵🇭", streak: 33, avatar: "🌊",   me: false },
-      { name: "ISLAND_VOICE",  xp: 7600,  rank: "Aswang",      flag: "🇵🇭", streak: 22, avatar: "🏝️",   me: false },
-      { name: "SUGBO_MASTER",  xp: 6100,  rank: "Manananggal", flag: "🇵🇭", streak: 18, avatar: "�",   me: false },
-      { name: "PLAYER_ONE",    xp: 4200,  rank: "Manananggal", flag: "🇵🇭", streak: 7,  avatar: "🧑‍💻", me: true  },
-      { name: "BISAYA_NOOB",   xp: 2800,  rank: "Tikbalang",   flag: "🇵🇭", streak: 11, avatar: "🐣",   me: false },
-      { name: "DIALECT_FAN",   xp: 1500,  rank: "Tikbalang",   flag: "🇵🇭", streak: 5,  avatar: "📖",   me: false },
-      { name: "NEW_LEARNER",   xp: 600,   rank: "Nuno",        flag: "🇵🇭", streak: 2,  avatar: "🌱",   me: false },
-    ],
-    Hiligaynon: [
-      { name: "ILONGGO_ACE",   xp: 11200, rank: "Sirena",      flag: "🇵🇭", streak: 40, avatar: "🎯",   me: false },
-      { name: "PANAY_PRIDE",   xp: 8900,  rank: "Aswang",      flag: "🇵🇭", streak: 29, avatar: "🌺",   me: false },
-      { name: "HILIG_MASTER",  xp: 7200,  rank: "Aswang",      flag: "🇵🇭", streak: 20, avatar: "🔥",   me: false },
-      { name: "PLAYER_ONE",    xp: 3100,  rank: "Manananggal", flag: "🇵🇭", streak: 7,  avatar: "🧑‍💻", me: true  },
-      { name: "SUGAR_LAND",    xp: 2400,  rank: "Tikbalang",   flag: "🇵🇭", streak: 8,  avatar: "🍬",   me: false },
-      { name: "WEST_VIS",      xp: 1800,  rank: "Tikbalang",   flag: "🇵🇭", streak: 6,  avatar: "🧭",   me: false },
-      { name: "ILOILO_KID",    xp: 900,   rank: "Nuno",        flag: "🇵🇭", streak: 4,  avatar: "🎮",   me: false },
-      { name: "FRESH_START",   xp: 400,   rank: "Nuno",        flag: "🇵🇭", streak: 1,  avatar: "✨",   me: false },
-    ],
-    Ilokano: [
-      { name: "NORTE_LEGEND",  xp: 13500, rank: "Sirena",      flag: "🇵🇭", streak: 55, avatar: "⭐",   me: false },
-      { name: "ILOCOS_BEST",   xp: 10200, rank: "Sirena",      flag: "🇵🇭", streak: 38, avatar: "🏔️",   me: false },
-      { name: "CORDILLERA",    xp: 8100,  rank: "Aswang",      flag: "🇵🇭", streak: 25, avatar: "🦅",   me: false },
-      { name: "VIGAN_VOICE",   xp: 6500,  rank: "Manananggal", flag: "🇵🇭", streak: 19, avatar: "🏛️",   me: false },
-      { name: "LAOAG_STAR",    xp: 4900,  rank: "Manananggal", flag: "🇵🇭", streak: 14, avatar: "💫",   me: false },
-      { name: "PLAYER_ONE",    xp: 2100,  rank: "Tikbalang",   flag: "🇵🇭", streak: 7,  avatar: "🧑‍💻", me: true  },
-      { name: "PINOY_LEARNER", xp: 1200,  rank: "Tikbalang",   flag: "🇵🇭", streak: 4,  avatar: "📚",   me: false },
-      { name: "BAGONG_ARAL",   xp: 500,   rank: "Nuno",        flag: "🇵🇭", streak: 2,  avatar: "🌱",   me: false },
-    ],
-    Kapampangan: [
-      { name: "PAMPANGA_PRO",  xp: 10800, rank: "Sirena",      flag: "🇵🇭", streak: 42, avatar: "🎖️",   me: false },
-      { name: "SISIG_KING",    xp: 8400,  rank: "Aswang",      flag: "🇵🇭", streak: 30, avatar: "🍳",   me: false },
-      { name: "KAPAMP_HERO",   xp: 6800,  rank: "Manananggal", flag: "🇵🇭", streak: 22, avatar: "🛡️",   me: false },
-      { name: "PLAYER_ONE",    xp: 3800,  rank: "Manananggal", flag: "🇵🇭", streak: 7,  avatar: "🧑‍💻", me: true  },
-      { name: "ANGELES_FAN",   xp: 2600,  rank: "Tikbalang",   flag: "🇵🇭", streak: 10, avatar: "😇",   me: false },
-      { name: "TARLAC_KID",    xp: 1400,  rank: "Tikbalang",   flag: "🇵🇭", streak: 5,  avatar: "🎮",   me: false },
-      { name: "LUZON_NOOB",    xp: 700,   rank: "Nuno",        flag: "🇵🇭", streak: 3,  avatar: "🐣",   me: false },
-      { name: "DAY_ONE",       xp: 200,   rank: "Nuno",        flag: "🇵🇭", streak: 1,  avatar: "🌱",   me: false },
-    ],
-    Waray: [
-      { name: "LEYTE_LEGEND",  xp: 9200,  rank: "Aswang",      flag: "🇵🇭", streak: 36, avatar: "🌋",   me: false },
-      { name: "SAMAR_STAR",    xp: 7500,  rank: "Aswang",      flag: "🇵🇭", streak: 24, avatar: "⚡",   me: false },
-      { name: "TACLOBAN_ACE",  xp: 5800,  rank: "Manananggal", flag: "🇵🇭", streak: 17, avatar: "🎯",   me: false },
-      { name: "EASTERN_VIS",   xp: 4100,  rank: "Manananggal", flag: "🇵🇭", streak: 12, avatar: "🌊",   me: false },
-      { name: "PLAYER_ONE",    xp: 1900,  rank: "Tikbalang",   flag: "🇵🇭", streak: 7,  avatar: "🧑‍💻", me: true  },
-      { name: "WARAY_NEWBIE",  xp: 1100,  rank: "Tikbalang",   flag: "🇵🇭", streak: 4,  avatar: "📖",   me: false },
-      { name: "REGION_EIGHT",  xp: 650,   rank: "Nuno",        flag: "🇵🇭", streak: 3,  avatar: "🎮",   me: false },
-      { name: "FIRST_TIMER",   xp: 300,   rank: "Nuno",        flag: "🇵🇭", streak: 1,  avatar: "🌱",   me: false },
-    ],
-  };
+  useEffect(() => {
+    const fetchLeaderboard = async () => {
+      setLoading(true);
+      try {
+        const cityParam = selectedCity === "Global" ? null : selectedCity;
+        let res;
+        if (mainTab === "global") {
+          res = await supabase.rpc("get_overall_leaderboard", { p_city: cityParam });
+        } else if (mainTab === "language") {
+          res = await supabase.rpc("get_language_leaderboard", { p_language: selectedLang, p_city: cityParam });
+        } else {
+          res = await supabase.rpc("get_weekly_leaderboard", { p_city: cityParam });
+        }
 
-  // Weekly data — shuffled XP values to simulate weekly rankings
-  const weeklyData: PlayerEntry[] = [
-    { name: "ARCADE_NINJA",  xp: 2400, rank: "Aswang",      flag: "🇵🇭", streak: 28, avatar: "🧙",   me: false },
-    { name: "PIXEL_MASTER",  xp: 2100, rank: "Sirena",      flag: "🇵🇭", streak: 45, avatar: "🧑",   me: false },
-    { name: "PLAYER_ONE",    xp: 1850, rank: "Manananggal", flag: "🇵🇭", streak: 7,  avatar: "🧑‍💻", me: true  },
-    { name: "NEON_LINGUIST", xp: 1600, rank: "Sirena",      flag: "🇵🇭", streak: 32, avatar: "👩",   me: false },
-    { name: "BYTE_SPEAKER",  xp: 1400, rank: "Aswang",      flag: "🇵🇭", streak: 21, avatar: "🤖",   me: false },
-    { name: "GLITCH_TONGUE", xp: 1200, rank: "Manananggal", flag: "🇵🇭", streak: 15, avatar: "🦊",   me: false },
-    { name: "RETRO_TALKER",  xp: 980,  rank: "Tikbalang",   flag: "🇵🇭", streak: 9,  avatar: "🎮",   me: false },
-    { name: "CEBU_KING",     xp: 870,  rank: "Sirena",      flag: "🇵🇭", streak: 50, avatar: "👑",   me: false },
-    { name: "LANG_ROOKIE",   xp: 650,  rank: "Nuno",        flag: "🇵🇭", streak: 3,  avatar: "🌱",   me: false },
-    { name: "NEW_LEARNER",   xp: 320,  rank: "Nuno",        flag: "🇵🇭", streak: 2,  avatar: "🌱",   me: false },
-  ];
+        if (res.error) {
+          console.error("Leaderboard fetch error:", res.error);
+        } else {
+          const mapped = (res.data || []).map((row: any) => ({
+            name: row.username,
+            xp: Number(row.xp || row.language_xp || row.weekly_xp || 0),
+            rank: row.creature_rank || row.language_level || "Nuno",
+            flag: "🇵🇭",
+            streak: row.streak || 0,
+            avatar: "🧑‍💻",
+            me: currentUserId && row.user_id === currentUserId
+          }));
+          setPlayers(mapped);
+        }
+      } catch (err) {
+        console.error("Leaderboard fetch error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchLeaderboard();
+  }, [mainTab, selectedLang, selectedCity, currentUserId]);
 
-  const players = mainTab === "global" ? globalData : mainTab === "language" ? languageData[selectedLang] : weeklyData;
   const medals = ["🥇", "🥈", "🥉"];
   const subtitle = mainTab === "global" ? "Global ranking by total XP earned" : mainTab === "language" ? `Top players in ${selectedLang}` : "Top performers this week";
 
@@ -824,73 +1004,95 @@ function LeaderboardScreen() {
     <Page maxWidth={700}>
       <PageHeader title="★ Leaderboard" subtitle={subtitle} />
 
-      {/* Podium — top 3 */}
-      {players.length >= 3 && (
-        <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-end", gap: 12, marginBottom: 28 }}>
-          {[players[1], players[0], players[2]].map((p, i) => {
-            const orderIdx = [1, 0, 2];
-            const heights = [115, 145, 92];
-            const ri = orderIdx[i];
-            return (
-              <div key={p.name} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5, flex: 1, maxWidth: 130 }}>
-                <span style={{ fontSize: 20, animation: "bounce 2s ease-in-out infinite", animationDelay: `${ri * 0.2}s` }}>{medals[ri]}</span>
-                <div style={{ width: 42, height: 42, borderRadius: 12, background: "rgba(255,26,26,0.05)", border: `2px solid ${RANKS[p.rank].color}55`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, boxShadow: RANKS[p.rank].glow }}>{p.avatar}</div>
-                <span style={{ ...ui, fontSize: 10, fontWeight: 800, color: C.text, textAlign: "center" }}>{p.name}</span>
-                <div style={{ width: "100%", height: heights[i], borderRadius: "12px 12px 0 0", background: `linear-gradient(180deg, ${RANKS[p.rank].color}20, ${RANKS[p.rank].color}05)`, border: `1.5px solid ${RANKS[p.rank].color}33`, borderBottom: "none", display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: 10 }}>
-                  <span style={{ ...mono, fontSize: 11, color: RANKS[p.rank].color, fontWeight: 700 }}>{(p.xp / 1000).toFixed(1)}k</span>
-                </div>
-              </div>
-            );
-          })}
+      {/* City Dropdown filter */}
+      <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 20 }}>
+        <span style={{ ...ui, fontSize: 12, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.08em" }}>Filter City:</span>
+        <div style={{ position: "relative", width: 180 }}>
+          <select value={selectedCity} onChange={(e) => setSelectedCity(e.target.value)}
+            style={{ ...ui, width: "100%", background: C.surface, border: `1.5px solid ${C.border}`, borderRadius: 10, padding: "8px 32px 8px 12px", color: C.text, fontSize: 12, fontWeight: 700, outline: "none", cursor: "pointer", appearance: "none" }}>
+            {["Global", "Quezon City", "Manila", "Cebu City", "Davao City", "Pasig", "Makati", "Baguio"].map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+          <span style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", color: C.textMuted, pointerEvents: "none", fontSize: 10 }}>▾</span>
         </div>
-      )}
-
-      {/* Tab bar: Global | Language | Weekly */}
-      <div style={{ display: "flex", background: "rgba(255,26,26,0.05)", border: `2px solid ${C.border}`, borderRadius: 14, padding: 4, marginBottom: 16 }}>
-        {([
-          { key: "global" as MainTab, label: "🌏 Global" },
-          { key: "language" as MainTab, label: "🗣️ Language" },
-          { key: "weekly" as MainTab, label: "📅 Weekly" },
-        ]).map((t) => (
-          <button key={t.key} onClick={() => setMainTab(t.key)}
-            style={{ flex: 1, padding: "10px", borderRadius: 10, border: "none", cursor: "pointer", background: mainTab === t.key ? C.red : "transparent", color: mainTab === t.key ? "#fff" : C.textMuted, fontWeight: 800, fontSize: 13, transition: "all 0.25s cubic-bezier(0.34,1.56,0.64,1)", boxShadow: mainTab === t.key ? `0 0 14px ${C.red}55` : "none", transform: mainTab === t.key ? "scale(1.02)" : "scale(1)", ...ui }}
-          >{t.label}</button>
-        ))}
       </div>
 
-      {/* Language dropdown — only shown when Language tab is active */}
-      {mainTab === "language" && (
-        <div style={{ marginBottom: 14 }}>
-          <div style={{ position: "relative", width: 220 }}>
-            <select value={selectedLang} onChange={(e) => setSelectedLang(e.target.value as Lang)}
-              style={{ ...ui, width: "100%", background: C.surface, border: `1.5px solid ${C.border}`, borderRadius: 10, padding: "10px 36px 10px 14px", color: C.text, fontSize: 13, fontWeight: 700, outline: "none", cursor: "pointer", appearance: "none" }}>
-              {languages.map((l) => <option key={l} value={l}>{l}</option>)}
-            </select>
-            <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: C.textMuted, pointerEvents: "none", fontSize: 12 }}>▾</span>
+      {loading ? (
+        <div style={{ ...ui, textAlign: "center", padding: "40px", color: C.textMuted }}>⚔️ Loading rankings...</div>
+      ) : players.length === 0 ? (
+        <div style={{ ...ui, textAlign: "center", padding: "40px", color: C.textMuted }}>🛡️ No contributors found in this filter yet.</div>
+      ) : (
+        <>
+          {/* Podium — top 3 */}
+          {players.length >= 1 && (
+            <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-end", gap: 12, marginBottom: 28 }}>
+              {[1, 0, 2].map((podIdx) => {
+                const p = players[podIdx];
+                if (!p) return <div key={podIdx} style={{ flex: 1, maxWidth: 130 }} />;
+                const heights = [115, 145, 92];
+                return (
+                  <div key={p.name} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5, flex: 1, maxWidth: 130 }}>
+                    <span style={{ fontSize: 20, animation: "bounce 2s ease-in-out infinite", animationDelay: `${podIdx * 0.2}s` }}>{medals[podIdx]}</span>
+                    <div style={{ width: 42, height: 42, borderRadius: 12, background: "rgba(255,26,26,0.05)", border: `2px solid ${RANKS[p.rank as Rank]?.color || C.red}55`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, boxShadow: RANKS[p.rank as Rank]?.glow || C.redGlow }}>{p.avatar}</div>
+                    <span style={{ ...ui, fontSize: 10, fontWeight: 800, color: C.text, textAlign: "center" }}>{p.name}</span>
+                    <div style={{ width: "100%", height: heights[podIdx], borderRadius: "12px 12px 0 0", background: `linear-gradient(180deg, ${(RANKS[p.rank as Rank]?.color || C.red)}20, ${(RANKS[p.rank as Rank]?.color || C.red)}05)`, border: `1.5px solid ${(RANKS[p.rank as Rank]?.color || C.red)}33`, borderBottom: "none", display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: 10 }}>
+                      <span style={{ ...mono, fontSize: 11, color: RANKS[p.rank as Rank]?.color || C.red, fontWeight: 700 }}>{p.xp.toFixed(1)}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Tab bar: Global | Language | Weekly */}
+          <div style={{ display: "flex", background: "rgba(255,26,26,0.05)", border: `2px solid ${C.border}`, borderRadius: 14, padding: 4, marginBottom: 16 }}>
+            {([
+              { key: "global" as MainTab, label: "🌏 Global" },
+              { key: "language" as MainTab, label: "🗣️ Language" },
+              { key: "weekly" as MainTab, label: "📅 Weekly" },
+            ]).map((t) => (
+              <button key={t.key} onClick={() => setMainTab(t.key)}
+                style={{ flex: 1, padding: "10px", borderRadius: 10, border: "none", cursor: "pointer", background: mainTab === t.key ? C.red : "transparent", color: mainTab === t.key ? "#fff" : C.textMuted, fontWeight: 800, fontSize: 13, transition: "all 0.25s cubic-bezier(0.34,1.56,0.64,1)", boxShadow: mainTab === t.key ? `0 0 14px ${C.red}55` : "none", transform: mainTab === t.key ? "scale(1.02)" : "scale(1)", ...ui }}
+              >{t.label}</button>
+            ))}
           </div>
-        </div>
-      )}
 
-      {/* Player list */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        {players.map((p, i) => (
-          <Card key={p.name + mainTab + (mainTab === "language" ? selectedLang : "")} style={{ padding: "11px 14px", display: "flex", alignItems: "center", gap: 12, ...(p.me ? { border: `1.5px solid ${C.red}44`, background: "rgba(255,26,26,0.04)" } : {}) }} glowColor={p.me ? C.red : undefined}>
-            <div style={{ width: 22, textAlign: "center", flexShrink: 0 }}>
-              {i < 3 ? <span style={{ fontSize: 16 }}>{medals[i]}</span> : <span style={{ ...mono, fontSize: 11, color: C.textMuted }}>{i + 1}</span>}
-            </div>
-            <div style={{ width: 36, height: 36, borderRadius: 9, background: "rgba(255,26,26,0.04)", border: `1.5px solid ${RANKS[p.rank].color}33`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>{p.avatar}</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ ...ui, fontSize: 12, fontWeight: 800, color: p.me ? C.redLight : C.text }}>{p.name}</span>
-                <span style={{ fontSize: 11 }}>{p.flag}</span>
-                {p.me && <span style={{ ...pixel, fontSize: 6, color: "#fff", background: C.red, padding: "2px 6px", borderRadius: 4 }}>YOU</span>}
+          {/* Language dropdown — only shown when Language tab is active */}
+          {mainTab === "language" && (
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ position: "relative", width: 220 }}>
+                <select value={selectedLang} onChange={(e) => setSelectedLang(e.target.value as Lang)}
+                  style={{ ...ui, width: "100%", background: C.surface, border: `1.5px solid ${C.border}`, borderRadius: 10, padding: "10px 36px 10px 14px", color: C.text, fontSize: 13, fontWeight: 700, outline: "none", cursor: "pointer", appearance: "none" }}>
+                  {languages.map((l) => <option key={l} value={l}>{l}</option>)}
+                </select>
+                <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: C.textMuted, pointerEvents: "none", fontSize: 12 }}>▾</span>
               </div>
-              <span style={{ ...ui, fontSize: 11, color: C.textMuted }}>{p.xp.toLocaleString()} XP · {p.streak}🔥</span>
             </div>
-            <RankBadge rank={p.rank} size={26} />
-          </Card>
-        ))}
-      </div>
+          )}
+
+          {/* Player list */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {players.map((p, i) => (
+              <Card key={p.name + mainTab + (mainTab === "language" ? selectedLang : "")} style={{ padding: "11px 14px", display: "flex", alignItems: "center", gap: 12, ...(p.me ? { border: `1.5px solid ${C.red}44`, background: "rgba(255,26,26,0.04)" } : {}) }} glowColor={p.me ? C.red : undefined}>
+                <div style={{ width: 22, textAlign: "center", flexShrink: 0 }}>
+                  {i < 3 ? <span style={{ fontSize: 16 }}>{medals[i]}</span> : <span style={{ ...mono, fontSize: 11, color: C.textMuted }}>{i + 1}</span>}
+                </div>
+                <div style={{ width: 36, height: 36, borderRadius: 9, background: "rgba(255,26,26,0.04)", border: `1.5px solid ${RANKS[p.rank as Rank]?.color || C.red}33`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>{p.avatar}</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ ...ui, fontSize: 12, fontWeight: 800, color: p.me ? C.redLight : C.text }}>{p.name}</span>
+                    <span style={{ fontSize: 11 }}>{p.flag}</span>
+                    {p.me && <span style={{ ...pixel, fontSize: 6, color: "#fff", background: C.red, padding: "2px 6px", borderRadius: 4 }}>YOU</span>}
+                  </div>
+                  <span style={{ ...ui, fontSize: 11, color: C.textMuted }}>{p.xp.toFixed(1)} XP · {p.streak}🔥</span>
+                </div>
+                <RankBadge rank={p.rank as Rank} size={26} />
+              </Card>
+            ))}
+          </div>
+        </>
+      )}
     </Page>
   );
 }
@@ -1103,11 +1305,46 @@ function ProfileScreen({ xp, rank, playerName, onNameChange }: { xp: number; ran
 // ─── Root ─────────────────────────────────────────────────────────────────────
 
 export default function App() {
-  const [xp, setXP] = useState(4750);
+  const [xp, setXP] = useState(0.0);
   const [playerName, setPlayerName] = useState("PLAYER_ONE");
+  const [user, setUser] = useState<any>(null);
+  const [challengePhrase, setChallengePhrase] = useState<any>(null);
   const rank = getRank(xp);
   const { pathname } = useLocation();
   const isLogin = pathname === "/" || pathname === "/login";
+
+  const refreshProfile = async () => {
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    if (!currentUser) return;
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", currentUser.id)
+      .single();
+    if (!error && data) {
+      setPlayerName(data.username || "PLAYER_ONE");
+      setXP(Number(data.xp) || 0.0);
+    }
+  };
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      refreshProfile();
+    } else {
+      setPlayerName("PLAYER_ONE");
+      setXP(0.0);
+    }
+  }, [user]);
 
   return (
     <div style={{ ...ui, background: C.bg, minHeight: "100vh", color: C.text }}>
@@ -1119,10 +1356,10 @@ export default function App() {
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login"        element={<LoginScreen />} />
           <Route path="/home"         element={<HomeScreen xp={xp} rank={rank} playerName={playerName} />} />
-          <Route path="/play"         element={<PlayScreen />} />
-          <Route path="/mission"      element={<MissionScreen />} />
-          <Route path="/recording"    element={<RecordingScreen />} />
-          <Route path="/evaluation"   element={<EvaluationScreen onXP={(n) => setXP((p) => p + n)} />} />
+          <Route path="/play"         element={<PlayScreen setChallengePhrase={setChallengePhrase} />} />
+          <Route path="/mission"      element={<MissionScreen challengePhrase={challengePhrase} />} />
+          <Route path="/recording"    element={<RecordingScreen challengePhrase={challengePhrase} />} />
+          <Route path="/evaluation"   element={<EvaluationScreen challengePhrase={challengePhrase} user={user} refreshProfile={refreshProfile} />} />
           <Route path="/leaderboard"  element={<LeaderboardScreen />} />
           <Route path="/achievements" element={<AchievementsScreen />} />
           <Route path="/daily"        element={<DailyScreen />} />
