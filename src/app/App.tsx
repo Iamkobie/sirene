@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from "react";
+import { Routes, Route, useNavigate, useLocation, Navigate } from "react-router";
 
-type Screen =
-  | "login" | "home" | "play" | "mission" | "recording"
-  | "evaluation" | "leaderboard" | "profile" | "achievements" | "daily";
+type Screen = "login" | "home" | "play" | "mission" | "recording" | "evaluation" | "leaderboard" | "profile" | "achievements" | "daily";
 
 type Rank = "Bronze" | "Silver" | "Gold" | "Platinum" | "Diamond";
 
@@ -101,10 +100,13 @@ const NAV_ITEMS: { label: string; icon: string; screen: Screen }[] = [
   { label: "Profile",      icon: "◉",  screen: "profile" },
 ];
 
-function Navbar({ screen, onNav, xp, rank }: { screen: Screen; onNav: (s: Screen) => void; xp: number; rank: Rank }) {
+function Navbar({ xp, rank }: { xp: number; rank: Rank }) {
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const screen = pathname.replace("/", "") || "home";
   return (
     <header style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, padding: "12px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(14,10,28,0.85)", backdropFilter: "blur(16px)", borderBottom: "1px solid rgba(155,93,229,0.12)" }}>
-      <button onClick={() => onNav("home")} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
+      <button onClick={() => navigate("/home")} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
         <span style={{ fontSize: 20 }}>🌊</span>
         <span style={{ ...pixel, fontSize: 10, color: "#f0eaff", letterSpacing: 1 }}>SI<span style={{ color: "#9b5de5" }}>RENE</span></span>
       </button>
@@ -113,7 +115,7 @@ function Navbar({ screen, onNav, xp, rank }: { screen: Screen; onNav: (s: Screen
         {NAV_ITEMS.map(({ label, icon, screen: s }) => {
           const active = screen === s;
           return (
-            <button key={s} onClick={() => onNav(s)} title={label}
+            <button key={s} onClick={() => navigate(`/${s}`)} title={label}
               style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 50, border: "none", background: active ? "#9b5de5" : "transparent", color: active ? "#fff" : "#8878a8", cursor: "pointer", fontSize: 12, fontWeight: 600, transition: "all 0.15s ease", boxShadow: active ? "0 0 14px rgba(155,93,229,0.45)" : "none", ...ui }}
               onMouseEnter={(e) => { if (!active) (e.currentTarget as HTMLButtonElement).style.color = "#d5cef0"; }}
               onMouseLeave={(e) => { if (!active) (e.currentTarget as HTMLButtonElement).style.color = "#8878a8"; }}
@@ -125,7 +127,7 @@ function Navbar({ screen, onNav, xp, rank }: { screen: Screen; onNav: (s: Screen
         })}
       </nav>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 50, padding: "6px 12px 6px 8px", cursor: "pointer" }} onClick={() => onNav("profile")}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 50, padding: "6px 12px 6px 8px", cursor: "pointer" }} onClick={() => navigate("/profile")}>
         <RankBadge rank={rank} size={26} />
         <div style={{ lineHeight: 1.2 }}>
           <div style={{ ...ui, fontSize: 11, fontWeight: 700, color: "#f0eaff" }}>PLAYER_ONE</div>
@@ -155,7 +157,9 @@ function PageHeader({ title, subtitle }: { title: string; subtitle?: string }) {
 
 // ─── Screen: Login ────────────────────────────────────────────────────────────
 
-function LoginScreen({ onLogin }: { onLogin: () => void }) {
+function LoginScreen() {
+  const navigate = useNavigate();
+  const onLogin = () => navigate("/home");
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
@@ -210,7 +214,9 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
 
 // ─── Screen: Home ─────────────────────────────────────────────────────────────
 
-function HomeScreen({ xp, rank, onNav }: { xp: number; rank: Rank; onNav: (s: Screen) => void }) {
+function HomeScreen({ xp, rank }: { xp: number; rank: Rank }) {
+  const navigate = useNavigate();
+  const onNav = (s: Screen) => navigate(`/${s}`);
   const cfg = RANKS[rank];
   const pct = Math.min(100, ((xp - cfg.min) / (cfg.max - cfg.min)) * 100);
   const rankKeys = Object.keys(RANKS) as Rank[];
@@ -311,7 +317,9 @@ const SOURCE_PHRASES: Record<string, string[]> = {
   ],
 };
 
-function PlayScreen({ onNav }: { onNav: (s: Screen) => void }) {
+function PlayScreen() {
+  const navigate = useNavigate();
+  const onNav = (s: Screen) => navigate(`/${s}`);
   const [from, setFrom]       = useState("English");
   const [to, setTo]           = useState("Bisaya");
   const [diff, setDiff]       = useState("Normal");
@@ -433,7 +441,9 @@ function PlayScreen({ onNav }: { onNav: (s: Screen) => void }) {
 
 // ─── Screen: Mission ──────────────────────────────────────────────────────────
 
-function MissionScreen({ onNav }: { onNav: (s: Screen) => void }) {
+function MissionScreen() {
+  const navigate = useNavigate();
+  const onNav = (s: Screen) => navigate(`/${s}`);
   const [idx, setIdx] = useState(0);
   const phrases = [
     { src: "Kumain ka na ba?",   tgt: "Nakakaon na ba ka?",   rom: "Have you eaten yet?" },
@@ -482,7 +492,9 @@ function MissionScreen({ onNav }: { onNav: (s: Screen) => void }) {
 
 // ─── Screen: Recording ────────────────────────────────────────────────────────
 
-function RecordingScreen({ onNav }: { onNav: (s: Screen) => void }) {
+function RecordingScreen() {
+  const navigate = useNavigate();
+  const onNav = (s: Screen) => navigate(`/${s}`);
   const [phase, setPhase] = useState<"idle" | "rec" | "done">("idle");
   const [secs, setSecs] = useState(0);
   const ref = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -522,7 +534,9 @@ function RecordingScreen({ onNav }: { onNav: (s: Screen) => void }) {
 
 // ─── Screen: Evaluation ───────────────────────────────────────────────────────
 
-function EvaluationScreen({ onNav, onXP }: { onNav: (s: Screen) => void; onXP: (n: number) => void }) {
+function EvaluationScreen({ onXP }: { onXP: (n: number) => void }) {
+  const navigate = useNavigate();
+  const onNav = (s: Screen) => navigate(`/${s}`);
   const [coinsVisible, setCoinsVisible] = useState(false);
   useEffect(() => { const t = setTimeout(() => setCoinsVisible(true), 300); return () => clearTimeout(t); }, []);
 
@@ -715,7 +729,9 @@ function AchievementsScreen() {
 
 // ─── Screen: Daily ────────────────────────────────────────────────────────────
 
-function DailyScreen({ onNav }: { onNav: (s: Screen) => void }) {
+function DailyScreen() {
+  const navigate = useNavigate();
+  const onNav = (s: Screen) => navigate(`/${s}`);
   const quests = [
     { title: "Translation Sprint", desc: "Translate 10 phrases in 5 minutes", xp: 200, color: "#e05a84", icon: "⚡", done: false },
     { title: "Accent Master",      desc: "Score 90+ on pronunciation",         xp: 150, color: "#2ec4c4", icon: "🎤", done: true  },
@@ -842,32 +858,31 @@ function ProfileScreen({ xp, rank }: { xp: number; rank: Rank }) {
 // ─── Root ─────────────────────────────────────────────────────────────────────
 
 export default function App() {
-  const [screen, setScreen] = useState<Screen>("login");
   const [xp, setXP] = useState(4750);
   const rank = getRank(xp);
-  const go = (s: Screen) => setScreen(s);
-
-  const renderScreen = () => {
-    switch (screen) {
-      case "login":        return <LoginScreen onLogin={() => go("home")} />;
-      case "home":         return <HomeScreen xp={xp} rank={rank} onNav={go} />;
-      case "play":         return <PlayScreen onNav={go} />;
-      case "mission":      return <MissionScreen onNav={go} />;
-      case "recording":    return <RecordingScreen onNav={go} />;
-      case "evaluation":   return <EvaluationScreen onNav={go} onXP={(n) => setXP((p) => p + n)} />;
-      case "leaderboard":  return <LeaderboardScreen />;
-      case "achievements": return <AchievementsScreen />;
-      case "daily":        return <DailyScreen onNav={go} />;
-      case "profile":      return <ProfileScreen xp={xp} rank={rank} />;
-      default:             return <HomeScreen xp={xp} rank={rank} onNav={go} />;
-    }
-  };
+  const { pathname } = useLocation();
+  const isLogin = pathname === "/" || pathname === "/login";
 
   return (
     <div style={{ ...ui, background: "#0e0a1c", minHeight: "100vh", color: "#f0eaff" }}>
       <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, background: "radial-gradient(ellipse at 15% 0%, rgba(155,93,229,0.08) 0%, transparent 45%), radial-gradient(ellipse at 85% 100%, rgba(46,196,196,0.06) 0%, transparent 45%)" }} />
-      {screen !== "login" && <Navbar screen={screen} onNav={go} xp={xp} rank={rank} />}
-      <div style={{ position: "relative", zIndex: 1 }}>{renderScreen()}</div>
+      {!isLogin && <Navbar xp={xp} rank={rank} />}
+      <div style={{ position: "relative", zIndex: 1 }}>
+        <Routes>
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/login"        element={<LoginScreen />} />
+          <Route path="/home"         element={<HomeScreen xp={xp} rank={rank} />} />
+          <Route path="/play"         element={<PlayScreen />} />
+          <Route path="/mission"      element={<MissionScreen />} />
+          <Route path="/recording"    element={<RecordingScreen />} />
+          <Route path="/evaluation"   element={<EvaluationScreen onXP={(n) => setXP((p) => p + n)} />} />
+          <Route path="/leaderboard"  element={<LeaderboardScreen />} />
+          <Route path="/achievements" element={<AchievementsScreen />} />
+          <Route path="/daily"        element={<DailyScreen />} />
+          <Route path="/profile"      element={<ProfileScreen xp={xp} rank={rank} />} />
+          <Route path="*"             element={<Navigate to="/home" replace />} />
+        </Routes>
+      </div>
       <style>{`
         * { box-sizing: border-box; scrollbar-width: none; }
         *::-webkit-scrollbar { display: none; }
