@@ -1030,13 +1030,111 @@ function AchievementsScreen() {
 
 function DailyScreen() {
   const navigate = useNavigate();
-  const onNav = (s: Screen) => navigate(`/${s}`);
+  const [loading, setLoading] = useState(true);
+  const [dailyQuest, setDailyQuest] = useState({
+    translation_sprint: false,
+    accent_master: false,
+    vocab_blitz: false,
+    community_share: false,
+  });
+  const [timeLeft, setTimeLeft] = useState("");
+
+  useEffect(() => {
+    let active = true;
+
+    async function fetchDailyQuests() {
+      try {
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        if (authError || !user) {
+          if (active) {
+            navigate("/login");
+          }
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from("daily_quest")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (active) {
+          if (error) {
+            console.error("Error fetching daily quests:", error);
+          } else if (data) {
+            setDailyQuest({
+              translation_sprint: !!data.translation_sprint,
+              accent_master: !!data.accent_master,
+              vocab_blitz: !!data.vocab_blitz,
+              community_share: !!data.community_share,
+            });
+          }
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error("Failed to load session/daily quests:", err);
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    fetchDailyQuests();
+
+    return () => {
+      active = false;
+    };
+  }, [navigate]);
+
+  useEffect(() => {
+    const calculateTimeLeft = () => {
+      const now = new Date();
+      const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
+      const diff = midnight.getTime() - now.getTime();
+      
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff / (1000 * 60)) % 60);
+      const seconds = Math.floor((diff / 1000) % 60);
+
+      const pad = (num: number) => String(num).padStart(2, "0");
+      return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+    };
+
+    setTimeLeft(calculateTimeLeft());
+    const interval = setInterval(() => {
+      setTimeLeft(calculateTimeLeft());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const quests = [
-    { title: "Translation Sprint", desc: "Translate 10 phrases in 5 minutes", xp: 200, color: C.red, icon: "⚡", done: false },
-    { title: "Accent Master",      desc: "Score 90+ on pronunciation",         xp: 150, color: C.cyan, icon: "🎤", done: true  },
-    { title: "Vocab Blitz",        desc: "Learn 20 new words today",           xp: 100, color: C.green, icon: "📖", done: false },
-    { title: "Community Share",    desc: "Contribute 5 voice recordings",      xp: 75,  color: C.gold, icon: "🤝", done: false },
+    { title: "Translation Sprint", desc: "Translate 10 phrases today",           xp: 200, color: C.red, icon: "⚡", done: dailyQuest.translation_sprint },
+    { title: "Accent Master",      desc: "Score 90+ on pronunciation",         xp: 150, color: C.cyan, icon: "🎤", done: dailyQuest.accent_master },
+    { title: "Vocab Blitz",        desc: "Learn 20 new words today",           xp: 100, color: C.green, icon: "📖", done: dailyQuest.vocab_blitz },
+    { title: "Community Share",    desc: "Contribute 5 voice recordings",      xp: 75,  color: C.gold, icon: "🤝", done: dailyQuest.community_share },
   ];
+
+  if (loading) {
+    return (
+      <Page>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "50vh", gap: 20 }}>
+          <div style={{
+            width: 40,
+            height: 40,
+            border: `3px solid rgba(255,26,26,0.1)`,
+            borderTop: `3px solid ${C.red}`,
+            borderRadius: "50%",
+            animation: "spin 1s linear infinite",
+            boxShadow: `0 0 10px ${C.red}33`
+          }} />
+          <span style={{ ...pixel, fontSize: 8, color: C.textMuted, letterSpacing: 1, animation: "pulse 1.5s infinite" }}>LOADING QUESTS...</span>
+        </div>
+      </Page>
+    );
+  }
 
   return (
     <Page maxWidth={700}>
@@ -1044,7 +1142,7 @@ function DailyScreen() {
         <PageHeader title="⚡ Daily Quests" subtitle="Complete all 4 for a bonus XP reward!" />
         <Card style={{ padding: "14px 20px", textAlign: "center", borderTop: `3px solid ${C.red}` }} glowColor={C.red}>
           <div style={{ ...pixel, fontSize: 7, color: C.textMuted, marginBottom: 4, letterSpacing: "0.1em" }}>RESETS IN</div>
-          <div style={{ ...mono, fontSize: 20, color: C.red, fontWeight: 700, letterSpacing: 3, textShadow: `0 0 12px ${C.red}55` }}>14:23:07</div>
+          <div style={{ ...mono, fontSize: 20, color: C.red, fontWeight: 700, letterSpacing: 3, textShadow: `0 0 12px ${C.red}55` }}>{timeLeft}</div>
           <div style={{ display: "flex", gap: 4, justifyContent: "center", marginTop: 8 }}>
             {quests.map((q, i) => <div key={i} style={{ width: 20, height: 5, borderRadius: 3, background: q.done ? C.red : "rgba(255,255,255,0.06)", boxShadow: q.done ? `0 0 6px ${C.red}66` : "none", transition: "all 0.3s" }} />)}
           </div>
@@ -1066,7 +1164,7 @@ function DailyScreen() {
               </div>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
                 <span style={{ ...mono, fontSize: 12, fontWeight: 800, color: C.gold }}>+{q.xp} XP</span>
-                {!q.done && <Btn color={q.color} size="sm" onClick={() => onNav("mission")}>Start →</Btn>}
+                {!q.done && <Btn color={q.color} size="sm" onClick={() => navigate("/play")}>Start →</Btn>}
               </div>
             </div>
           </Card>
