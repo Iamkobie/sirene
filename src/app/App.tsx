@@ -898,16 +898,99 @@ function LeaderboardScreen() {
 // ─── Screen: Achievements ─────────────────────────────────────────────────────
 
 function AchievementsScreen() {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [achievements, setAchievements] = useState({
+    first_blood: false,
+    hot_streak: false,
+    sirena_quest: false,
+    polyglot: false,
+    speed_demon: false,
+    perfect_score: false,
+    top_rank: false,
+    book_worm: false,
+  });
+
+  useEffect(() => {
+    let active = true;
+
+    async function fetchAchievements() {
+      try {
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        if (authError || !user) {
+          if (active) {
+            navigate("/login");
+          }
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from("achievements")
+          .select("*")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (active) {
+          if (error) {
+            console.error("Error fetching achievements:", error);
+          } else if (data) {
+            setAchievements({
+              first_blood: !!data.first_blood,
+              hot_streak: !!data.hot_streak,
+              sirena_quest: !!data.sirena_quest,
+              polyglot: !!data.polyglot,
+              speed_demon: !!data.speed_demon,
+              perfect_score: !!data.perfect_score,
+              top_rank: !!data.top_rank,
+              book_worm: !!data.book_worm,
+            });
+          }
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error("Failed to load session/achievements:", err);
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    fetchAchievements();
+
+    return () => {
+      active = false;
+    };
+  }, [navigate]);
+
   const items = [
-    { icon: "🏆", title: "First Blood",   desc: "Complete your first translation", done: true,  color: C.gold },
-    { icon: "🔥", title: "Hot Streak",    desc: "Maintain a 7-day streak",         done: true,  color: C.orange },
-    { icon: "🧜‍♀️", title: "Sirena Quest",  desc: "Reach Sirena rank",               done: false, color: C.cyan },
-    { icon: "🌍", title: "Polyglot",      desc: "Start learning 5 dialects",       done: false, color: C.green },
-    { icon: "⚡", title: "Speed Demon",   desc: "100 translations in one day",     done: false, color: C.red },
-    { icon: "🎯", title: "Perfect Score", desc: "Score 100 on any evaluation",     done: true,  color: C.green },
-    { icon: "👑", title: "Top Rank",      desc: "Reach #1 on the leaderboard",     done: false, color: C.gold },
-    { icon: "📚", title: "Bookworm",      desc: "Learn 500 phrases",               done: true,  color: C.red },
+    { icon: "🏆", title: "First Blood",   desc: "Complete your first translation", done: achievements.first_blood,   color: C.gold },
+    { icon: "🔥", title: "Hot Streak",    desc: "Maintain a 7-day streak",         done: achievements.hot_streak,    color: C.orange },
+    { icon: "🧜‍♀️", title: "Sirena Quest",  desc: "Reach Sirena rank",               done: achievements.sirena_quest,  color: C.cyan },
+    { icon: "🌍", title: "Polyglot",      desc: "Start learning 5 dialects",       done: achievements.polyglot,      color: C.green },
+    { icon: "⚡", title: "Speed Demon",   desc: "100 translations in one day",     done: achievements.speed_demon,   color: C.red },
+    { icon: "🎯", title: "Perfect Score", desc: "Score 100 on any evaluation",     done: achievements.perfect_score, color: C.green },
+    { icon: "👑", title: "Top Rank",      desc: "Reach #1 on the leaderboard",     done: achievements.top_rank,      color: C.gold },
+    { icon: "📚", title: "Bookworm",      desc: "Learn 500 phrases",               done: achievements.book_worm,     color: C.red },
   ];
+
+  if (loading) {
+    return (
+      <Page>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "50vh", gap: 20 }}>
+          <div style={{
+            width: 40,
+            height: 40,
+            border: `3px solid rgba(255,26,26,0.1)`,
+            borderTop: `3px solid ${C.red}`,
+            borderRadius: "50%",
+            animation: "spin 1s linear infinite",
+            boxShadow: `0 0 10px ${C.red}33`
+          }} />
+          <span style={{ ...pixel, fontSize: 8, color: C.textMuted, letterSpacing: 1, animation: "pulse 1.5s infinite" }}>LOADING ACHIEVEMENTS...</span>
+        </div>
+      </Page>
+    );
+  }
 
   return (
     <Page>
