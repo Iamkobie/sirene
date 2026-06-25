@@ -458,30 +458,35 @@ function HomeScreen({ xp, rank, playerName }: { xp: number; rank: Rank; playerNa
 
 // ─── Screen: Play ─────────────────────────────────────────────────────────────
 
-const SOURCE_PHRASES: Record<string, string[]> = {
-  English: ["Have you eaten yet?", "Good morning, how are you?", "Where are you going?", "I am happy to see you.", "What is your name?", "Thank you very much."],
-  Tagalog: ["Kumain ka na ba?", "Magandang umaga, kumusta ka?", "Saan ka pupunta?", "Masaya akong makita ka.", "Ano ang pangalan mo?", "Maraming salamat."],
+const API_BASE = import.meta.env.VITE_API_BASE_URL as string;
+
+type PhraseResponse = {
+  phrase: string;
+  hints: { word: string; translation: string }[];
+  phrase_id: string;
+  difficulty: number;
+  source_language: string;
+  target_language: string;
 };
+
+const DIFF_MAP: Record<string, number> = { Easy: 1, Normal: 2, Hard: 3, Expert: 4 };
 
 function PlayScreen() {
   const navigate = useNavigate();
-  const onNav = (s: Screen) => navigate(`/${s}`);
   const [from, setFrom] = useState("English");
   const [to, setTo] = useState("Bisaya");
-  const [diff, setDiff] = useState("Normal");
-  const [phraseIdx, setPhraseIdx] = useState(0);
+  const [diff, setDiff] = useState("Easy");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const sources = ["English", "Tagalog"];
   const targets = ["Bisaya", "Cebuano", "Kapampangan", "Ilocano", "Waray", "Hiligaynon", "Bicolano", "Tagalog"];
   const diffs = [
     { label: "Easy",   color: C.green, icon: "🌱" },
-    { label: "Normal", color: C.red, icon: "⚔️" },
-    { label: "Hard",   color: C.gold, icon: "🔥" },
+    { label: "Normal", color: C.red,   icon: "⚔️" },
+    { label: "Hard",   color: C.gold,  icon: "🔥" },
     { label: "Expert", color: "#ff1a1a", icon: "💀" },
   ];
-
-  const phrases = SOURCE_PHRASES[from] ?? [];
-  const activePhraseText = phrases[phraseIdx] ?? phrases[0];
 
   const selStyle: React.CSSProperties = {
     ...ui, width: "100%", background: "rgba(255,26,26,0.03)",
@@ -490,36 +495,40 @@ function PlayScreen() {
     outline: "none", cursor: "pointer", appearance: "none",
   };
 
+  const handleStart = async () => {
+    setError(""); setLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { setError("Not logged in."); setLoading(false); return; }
+      const params = new URLSearchParams({
+        source_language: from.toLowerCase(),
+        target_language: to.toLowerCase(),
+        difficulty: String(DIFF_MAP[diff]),
+      });
+      const res = await fetch(`${API_BASE}/api/phrase?${params}`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+      const data: PhraseResponse = await res.json();
+      navigate("/mission", { state: { phrase: data } });
+    } catch (e: any) {
+      setError(e.message ?? "Failed to fetch phrase.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Page maxWidth={660}>
       <PageHeader title="New Challenge" subtitle="Choose your language, pick a phrase, then battle! ⚔️" />
 
       <Card style={{ padding: 0, overflow: "hidden", marginBottom: 16, borderTop: `3px solid ${C.red}` }} glowColor={C.red}>
-        <div style={{ padding: "24px 24px 20px", borderBottom: `1.5px solid ${C.border}`, background: "rgba(255,26,26,0.04)" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div style={{ width: 8, height: 8, borderRadius: "50%", background: C.red, boxShadow: `0 0 8px ${C.red}88`, animation: "pulse 1.5s ease-in-out infinite" }} />
-              <span style={{ ...pixel, fontSize: 8, color: C.textMuted, letterSpacing: "0.08em" }}>PHRASE TO TRANSLATE</span>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ ...mono, fontSize: 11, color: C.textMuted }}>{phraseIdx + 1}/{phrases.length}</span>
-              <button onClick={() => setPhraseIdx((i) => (i + 1) % phrases.length)}
-                style={{ background: "rgba(255,26,26,0.08)", border: `1.5px solid ${C.border}`, borderRadius: 8, padding: "5px 12px", color: C.red, cursor: "pointer", fontSize: 11, fontWeight: 700, ...ui, transition: "all 0.15s" }}>Next ↻</button>
-            </div>
-          </div>
-          <p style={{ ...ui, fontSize: 22, fontWeight: 900, color: C.text, margin: 0, lineHeight: 1.4 }}>"{activePhraseText}"</p>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 14 }}>
-            <span style={{ ...ui, fontSize: 12, color: C.textMuted }}>Speak this in</span>
-            <span style={{ ...ui, fontSize: 12, fontWeight: 800, color: C.red, background: `rgba(255,26,26,0.12)`, border: `1.5px solid ${C.red}44`, borderRadius: 6, padding: "3px 10px" }}>{to}</span>
-          </div>
-        </div>
-
         <div style={{ padding: "22px 24px 26px" }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 18 }}>
             <div>
               <div style={{ ...ui, fontSize: 11, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>Source Language</div>
               <div style={{ position: "relative" }}>
-                <select value={from} onChange={(e) => { setFrom(e.target.value); setPhraseIdx(0); }} style={selStyle}>{sources.map((l) => <option key={l}>{l}</option>)}</select>
+                <select value={from} onChange={(e) => setFrom(e.target.value)} style={selStyle}>{sources.map((l) => <option key={l}>{l}</option>)}</select>
                 <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: C.textMuted, pointerEvents: "none", fontSize: 11 }}>▾</span>
               </div>
             </div>
@@ -542,22 +551,18 @@ function PlayScreen() {
               ))}
             </div>
           </div>
-          <Btn color={C.red} onClick={() => onNav("mission")} full size="lg">⚔️  Start Challenge</Btn>
+
+          {error && (
+            <div style={{ ...ui, fontSize: 12, color: C.redLight, background: "rgba(255,26,26,0.08)", border: `1.5px solid ${C.red}44`, borderRadius: 10, padding: "10px 14px", marginBottom: 14 }}>
+              {error}
+            </div>
+          )}
+
+          <Btn color={C.red} onClick={handleStart} full size="lg" disabled={loading}>
+            {loading ? "Fetching phrase…" : "⚔️  Start Challenge"}
+          </Btn>
         </div>
       </Card>
-
-      <div style={{ ...pixel, fontSize: 8, color: C.textMuted, letterSpacing: "0.08em", marginBottom: 10 }}>ALL PHRASES</div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-        {phrases.map((p, i) => (
-          <button key={i} onClick={() => setPhraseIdx(i)}
-            style={{ ...ui, textAlign: "left", padding: "11px 14px", borderRadius: 10, border: `1.5px solid ${i === phraseIdx ? C.red + "55" : C.border}`, background: i === phraseIdx ? "rgba(255,26,26,0.06)" : "rgba(255,255,255,0.01)", cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: 12, transform: i === phraseIdx ? "scale(1.01)" : "scale(1)" }}
-          >
-            <span style={{ ...mono, fontSize: 10, color: i === phraseIdx ? C.red : C.textMuted, width: 16, flexShrink: 0 }}>{i + 1}</span>
-            <span style={{ ...ui, fontSize: 13, color: i === phraseIdx ? C.text : C.textMuted, fontWeight: i === phraseIdx ? 700 : 400 }}>{p}</span>
-            {i === phraseIdx && <span style={{ marginLeft: "auto", fontSize: 11, color: C.red, fontWeight: 700 }}>●</span>}
-          </button>
-        ))}
-      </div>
     </Page>
   );
 }
@@ -566,48 +571,115 @@ function PlayScreen() {
 
 function MissionScreen() {
   const navigate = useNavigate();
-  const onNav = (s: Screen) => navigate(`/${s}`);
-  const [idx, setIdx] = useState(0);
-  const phrases = [
-    { src: "Kumain ka na ba?", tgt: "Nakakaon na ba ka?", rom: "Have you eaten yet?" },
-    { src: "Asan ka na?", tgt: "Hain ka na?", rom: "Where are you now?" },
-    { src: "Magandang umaga.", tgt: "Maayong buntag.", rom: "Good morning." },
-  ];
-  const p = phrases[idx];
+  const location = useLocation();
+  const initialPhrase = location.state?.phrase as PhraseResponse | undefined;
+
+  const [currentPhrase, setCurrentPhrase] = useState<PhraseResponse | undefined>(initialPhrase);
+  const [hintIndex, setHintIndex] = useState(0);
+  const [shownHints, setShownHints] = useState<{ word: string; translation: string }[]>([]);
+  const [fetchingNext, setFetchingNext] = useState(false);
+  const [confirmEnd, setConfirmEnd] = useState(false);
+  const [phraseCount, setPhraseCount] = useState(1);
+
+  if (!currentPhrase) {
+    return (
+      <Page maxWidth={660}>
+        <div style={{ ...ui, color: C.textMuted, textAlign: "center", paddingTop: 60 }}>
+          No phrase loaded. <span style={{ color: C.red, cursor: "pointer", fontWeight: 700 }} onClick={() => navigate("/play")}>Go back to Play</span>
+        </div>
+      </Page>
+    );
+  }
+
+  const diffLabel = Object.entries(DIFF_MAP).find(([, v]) => v === currentPhrase.difficulty)?.[0] ?? String(currentPhrase.difficulty);
+  const hintsLeft = currentPhrase.hints.length - hintIndex;
+
+  const handleHint = () => {
+    if (hintIndex < currentPhrase.hints.length) {
+      setShownHints((prev) => [...prev, currentPhrase.hints[hintIndex]]);
+      setHintIndex((i) => i + 1);
+    }
+  };
+
+  const fetchNext = async () => {
+    setFetchingNext(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const params = new URLSearchParams({
+        source_language: currentPhrase.source_language,
+        target_language: currentPhrase.target_language,
+        difficulty: String(currentPhrase.difficulty),
+      });
+      const res = await fetch(`${API_BASE}/api/phrase?${params}`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!res.ok) throw new Error();
+      const data: PhraseResponse = await res.json();
+      setCurrentPhrase(data);
+      setHintIndex(0);
+      setShownHints([]);
+      setPhraseCount((n) => n + 1);
+    } finally {
+      setFetchingNext(false);
+    }
+  };
 
   return (
     <Page maxWidth={660}>
+      {/* End game confirm overlay */}
+      {confirmEnd && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <Card style={{ padding: 32, maxWidth: 340, width: "100%", textAlign: "center" }} glowColor={C.red}>
+            <div style={{ fontSize: 36, marginBottom: 14 }}>🚩</div>
+            <div style={{ ...ui, fontSize: 16, fontWeight: 900, color: C.text, marginBottom: 8 }}>End Session?</div>
+            <div style={{ ...ui, fontSize: 13, color: C.textMuted, marginBottom: 24 }}>You've completed {phraseCount} phrase{phraseCount !== 1 ? "s" : ""}. End now and go home?</div>
+            <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+              <Btn color={C.textMuted} variant="outline" size="md" onClick={() => setConfirmEnd(false)}>Keep Playing</Btn>
+              <Btn color={C.red} size="md" onClick={() => navigate("/home")}>End Game</Btn>
+            </div>
+          </Card>
+        </div>
+      )}
+
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
         <div>
           <h1 style={{ ...ui, fontSize: 24, fontWeight: 900, color: C.text, margin: 0 }}>⚔️ Phrase Challenge</h1>
-          <p style={{ ...ui, fontSize: 13, color: C.textMuted, margin: "4px 0 0" }}>Tagalog → Bisaya · Normal</p>
+          <p style={{ ...ui, fontSize: 13, color: C.textMuted, margin: "4px 0 0", textTransform: "capitalize" }}>
+            {currentPhrase.source_language} → {currentPhrase.target_language} · {diffLabel} · #{phraseCount}
+          </p>
         </div>
-        <span style={{ ...pixel, fontSize: 8, color: C.red, background: `rgba(255,26,26,0.1)`, border: `1.5px solid ${C.red}33`, padding: "6px 12px", borderRadius: 8, boxShadow: `0 0 8px ${C.red}22` }}>LVL 4-2</span>
-      </div>
-
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-          <span style={{ ...ui, fontSize: 12, color: C.textMuted }}>Phrase {idx + 1} of {phrases.length}</span>
-          <span style={{ ...mono, fontSize: 12, color: C.red }}>{Math.round((idx / phrases.length) * 100)}%</span>
-        </div>
-        <ProgressBar pct={(idx / phrases.length) * 100} color={C.red} height={8} />
+        <span style={{ ...pixel, fontSize: 8, color: C.red, background: `rgba(255,26,26,0.1)`, border: `1.5px solid ${C.red}33`, padding: "6px 12px", borderRadius: 8, textTransform: "capitalize" }}>{diffLabel}</span>
       </div>
 
       <Card style={{ padding: 28, marginBottom: 18, borderLeft: `4px solid ${C.red}` }} glowColor={C.red}>
         <div style={{ ...pixel, fontSize: 8, color: C.textMuted, letterSpacing: "0.08em", marginBottom: 12 }}>TRANSLATE THIS</div>
-        <p style={{ ...ui, fontSize: 22, fontWeight: 800, color: C.text, lineHeight: 1.5, marginBottom: 22 }}>"{p.src}"</p>
-        <div style={{ background: "rgba(255,26,26,0.05)", border: `2px solid ${C.red}22`, borderRadius: 14, padding: 18 }}>
-          <div style={{ ...ui, fontSize: 11, color: C.textMuted, marginBottom: 5 }}>Bisaya translation</div>
-          <div style={{ ...ui, fontSize: 22, color: C.redLight, fontWeight: 800, marginBottom: 4 }}>{p.tgt}</div>
-          <div style={{ ...mono, fontSize: 12, color: C.textMuted }}>{p.rom}</div>
-        </div>
+        <p style={{ ...ui, fontSize: 22, fontWeight: 800, color: C.text, lineHeight: 1.5, marginBottom: shownHints.length > 0 ? 22 : 0 }}>"{currentPhrase.phrase}"</p>
+        {shownHints.length > 0 && (
+          <div style={{ background: "rgba(255,26,26,0.05)", border: `2px solid ${C.red}22`, borderRadius: 14, padding: 18 }}>
+            <div style={{ ...ui, fontSize: 11, color: C.textMuted, marginBottom: 10 }}>Hints</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {shownHints.map((h) => (
+                <div key={h.word} style={{ background: "rgba(255,26,26,0.08)", border: `1.5px solid ${C.red}33`, borderRadius: 8, padding: "6px 12px", animation: "slideUp 0.25s ease-out" }}>
+                  <span style={{ ...ui, fontSize: 13, color: C.redLight, fontWeight: 700 }}>{h.word}</span>
+                  <span style={{ ...ui, fontSize: 12, color: C.textMuted }}> → {h.translation}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </Card>
 
       <div style={{ display: "flex", gap: 10 }}>
-        <Btn color={C.cyan} variant="outline" size="md" onClick={() => {}}>♪ Listen</Btn>
-        <Btn color={C.red} size="md" onClick={() => onNav("recording")}>● Record</Btn>
+        <Btn color={C.gold} variant="outline" size="md" onClick={handleHint} disabled={hintsLeft === 0}>
+          💡 Hint {hintsLeft > 0 ? `(${hintsLeft})` : "(none)"}
+        </Btn>
+        <Btn color={C.red} size="md" onClick={() => navigate("/recording", { state: { phrase: currentPhrase } })}>● Record</Btn>
+        <Btn color={C.green} variant="outline" size="md" onClick={fetchNext} disabled={fetchingNext}>
+          {fetchingNext ? "Loading…" : "Next ▶"}
+        </Btn>
         <div style={{ flex: 1 }} />
-        <Btn color={C.textMuted} variant="ghost" size="md" onClick={() => setIdx((i) => Math.min(i + 1, phrases.length - 1))}>Skip ▶</Btn>
+        <Btn color={C.textMuted} variant="ghost" size="md" onClick={() => setConfirmEnd(true)}>🚩 End</Btn>
       </div>
     </Page>
   );
