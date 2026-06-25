@@ -2,16 +2,65 @@ import { useState, useEffect, useRef } from "react";
 import { Routes, Route, useNavigate, useLocation, Navigate } from "react-router";
 import { supabase } from "../lib/supabase";
 
+// Rank SVG imports
+import nunoSvg from "../assets/ranks/nunorank.svg";
+import tikbalangSvg from "../assets/ranks/tikbalrank.svg";
+import manananggalSvg from "../assets/ranks/manananggalrank.svg";
+import aswangSvg from "../assets/ranks/aswangrank.svg";
+import sirenaSvg from "../assets/ranks/sirenarank.svg";
+
 type Screen = "login" | "home" | "play" | "mission" | "recording" | "evaluation" | "leaderboard" | "profile" | "achievements" | "daily";
 type Rank = "Nuno" | "Tikbalang" | "Manananggal" | "Aswang" | "Sirena";
+
+const RANK_SVGS: Record<Rank, string> = {
+  Nuno: nunoSvg,
+  Tikbalang: tikbalangSvg,
+  Manananggal: manananggalSvg,
+  Aswang: aswangSvg,
+  Sirena: sirenaSvg,
+};
 
 const RANKS: Record<Rank, { color: string; glow: string; bg: string; min: number; max: number; creature: string; tier: string }> = {
   Nuno:        { color: "#cd7f32", glow: "0 0 14px #cd7f3255", bg: "rgba(205,127,50,0.12)",  min: 0,     max: 1000,  creature: "🍄", tier: "Bronze" },
   Tikbalang:   { color: "#b0c4de", glow: "0 0 14px #b0c4de55", bg: "rgba(176,196,222,0.12)", min: 1000,  max: 3000,  creature: "🐴", tier: "Silver" },
   Manananggal: { color: "#ffd700", glow: "0 0 14px #ffd70055", bg: "rgba(255,215,0,0.12)",   min: 3000,  max: 6000,  creature: "🦇", tier: "Gold" },
-  Aswang:      { color: "#ff1a1a", glow: "0 0 14px #ff1a1a55", bg: "rgba(255,26,26,0.12)",   min: 6000,  max: 10000, creature: "👁️", tier: "Platinum" },
-  Sirena:      { color: "#4fc3f7", glow: "0 0 14px #4fc3f755", bg: "rgba(79,195,247,0.12)",  min: 10000, max: 15000, creature: "🧜‍♀️", tier: "Diamond" },
+  Aswang:      { color: "#a8b4c4", glow: "0 0 14px #a8b4c455", bg: "rgba(168,180,196,0.12)", min: 6000,  max: 10000, creature: "👁️", tier: "Platinum" },
+  Sirena:      { color: "#b9f2ff", glow: "0 0 14px #b9f2ff55", bg: "rgba(185,242,255,0.12)", min: 10000, max: 15000, creature: "🧜‍♀️", tier: "Diamond" },
 };
+
+// Coming soon ranks (blacked out placeholders)
+const COMING_SOON_RANKS = [
+  { name: "???", color: "#1a1a1a", glow: "0 0 8px rgba(255,255,255,0.05)", min: "15k" },
+  { name: "???", color: "#1a1a1a", glow: "0 0 8px rgba(255,255,255,0.05)", min: "20k" },
+  { name: "???", color: "#1a1a1a", glow: "0 0 8px rgba(255,255,255,0.05)", min: "30k" },
+];
+
+// Profile banners unlocked at each rank — progressively more premium
+const RANK_BANNERS: Record<Rank, { name: string; gradient: string; unlocked: boolean }[]> = {
+  Nuno: [
+    { name: "Earth Root", gradient: "linear-gradient(135deg, #1a0f05, #2e1a0a, #4a2c14, #6b4423, #4a2c14, #2e1a0a)", unlocked: true },
+  ],
+  Tikbalang: [
+    { name: "Silver Mane", gradient: "linear-gradient(135deg, #1a2030, #2d3f5a, #5a7a9e, #8aaac8, #aec8de, #8aaac8, #5a7a9e, #2d3f5a, #1a2030)", unlocked: true },
+  ],
+  Manananggal: [
+    { name: "Golden Wings", gradient: "linear-gradient(135deg, #1a1200, #3d2e00, #6b4e00, #a67c00, #d4a300, #ffd700, #ffe44d, #ffd700, #d4a300, #a67c00, #6b4e00, #3d2e00)", unlocked: true },
+  ],
+  Aswang: [
+    { name: "Platinum Ascent", gradient: "linear-gradient(135deg, #1a2a3a, #2d4a5e, #4a7a8f, #6eaab8, #8ecad6, #b0e0e8, #d4f0f4, #b0e0e8, #8ecad6, #6eaab8, #4a7a8f, #2d4a5e, #1a2a3a)", unlocked: true },
+  ],
+  Sirena: [
+    { name: "Diamond Tide", gradient: "linear-gradient(135deg, #0a001a, #1a0044, #2e0080, #5500cc, #7733ff, #aa66ff, #cc99ff, #e0ccff, #ffffff, #e0ccff, #cc99ff, #aa66ff, #7733ff, #5500cc, #2e0080, #1a0044, #0a001a)", unlocked: true },
+  ],
+};
+
+// Coming soon banners (locked, future content)
+const COMING_SOON_BANNERS = [
+  { name: "???", gradient: "linear-gradient(135deg, #0a0a0a, #111, #0a0a0a)" },
+  { name: "???", gradient: "linear-gradient(135deg, #0a0a0a, #111, #0a0a0a)" },
+  { name: "???", gradient: "linear-gradient(135deg, #0a0a0a, #111, #0a0a0a)" },
+  { name: "???", gradient: "linear-gradient(135deg, #0a0a0a, #111, #0a0a0a)" },
+];
 
 function getRank(xp: number): Rank {
   if (xp < 1000) return "Nuno";
@@ -79,10 +128,10 @@ function SirenaLogo({ size = 32 }: { size?: number }) {
 // ─── Shared Components ────────────────────────────────────────────────────────
 
 function RankBadge({ rank, size = 32 }: { rank: Rank; size?: number }) {
-  const { color, bg, glow, creature } = RANKS[rank];
+  const { color, bg, glow } = RANKS[rank];
   return (
-    <span title={rank} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: size, height: size, borderRadius: "50%", background: bg, border: `2px solid ${color}66`, fontSize: size * 0.44, flexShrink: 0, boxShadow: glow, animation: "float 3s ease-in-out infinite" }}>
-      {creature}
+    <span title={rank} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: size, height: size, borderRadius: "50%", background: bg, border: `2px solid ${color}66`, flexShrink: 0, boxShadow: glow, overflow: "hidden" }}>
+      <img src={RANK_SVGS[rank]} alt={rank} style={{ width: size * 0.65, height: size * 0.65, objectFit: "contain", display: "block" }} />
     </span>
   );
 }
@@ -996,20 +1045,48 @@ function AchievementsScreen() {
     <Page>
       <PageHeader title="🏆 Achievements" subtitle={`${items.filter((a) => a.done).length} of ${items.length} unlocked — keep going!`} />
 
-      <Card style={{ padding: 22, marginBottom: 24, borderTop: `3px solid ${C.red}` }} glowColor={C.red}>
-        <div style={{ ...pixel, fontSize: 9, color: C.text, marginBottom: 14, letterSpacing: "0.05em" }}>MYTHICAL RANK PATH</div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          {(Object.keys(RANKS) as Rank[]).map((r, i) => (
-            <div key={r} style={{ display: "flex", alignItems: "center" }}>
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
-                <RankBadge rank={r} size={38} />
-                <span style={{ ...ui, fontSize: 10, fontWeight: 700, color: RANKS[r].color }}>{r}</span>
-                <span style={{ ...mono, fontSize: 8, color: C.textMuted }}>{RANKS[r].min / 1000}k XP</span>
+      <Card style={{ padding: "28px 20px", marginBottom: 24, borderTop: `3px solid ${C.red}` }} glowColor={C.red}>
+        <div style={{ ...pixel, fontSize: 9, color: C.text, marginBottom: 24, letterSpacing: "0.05em" }}>MYTHICAL RANK PATH</div>
+        <div style={{ overflowX: "auto", paddingBottom: 8 }}>
+          <div style={{ display: "inline-flex", alignItems: "center" }}>
+            {(Object.keys(RANKS) as Rank[]).map((r, i) => {
+              return (
+                <div key={r} style={{ display: "contents" }}>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 100, flexShrink: 0 }}>
+                    <div style={{ width: 72, height: 72, borderRadius: "50%", background: RANKS[r].bg, border: `2.5px solid ${RANKS[r].color}66`, boxShadow: RANKS[r].glow, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <img src={RANK_SVGS[r]} alt={r} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                    </div>
+                    <span style={{ ...ui, fontSize: 11, fontWeight: 700, color: RANKS[r].color, textAlign: "center", marginTop: 8 }}>{r}</span>
+                    <span style={{ ...mono, fontSize: 9, color: C.textMuted, marginTop: 4 }}>{RANKS[r].tier}</span>
+                    <span style={{ ...mono, fontSize: 8, color: C.textMuted, marginTop: 2 }}>{RANKS[r].min / 1000}k XP</span>
+                  </div>
+                  {i < Object.keys(RANKS).length - 1 && (
+                    <div style={{ width: 24, height: 2, background: `linear-gradient(90deg, ${RANKS[r].color}55, ${RANKS[(Object.keys(RANKS) as Rank[])[i + 1]].color}55)`, borderRadius: 1, flexShrink: 0, marginBottom: 52 }} />
+                  )}
+                </div>
+              );
+            })}
+            {/* Connector from last rank to coming soon */}
+            <div style={{ width: 24, height: 2, background: `linear-gradient(90deg, ${RANKS.Sirena.color}44, rgba(255,255,255,0.08))`, borderRadius: 1, flexShrink: 0, marginBottom: 52 }} />
+            {/* Coming soon blacked-out ranks */}
+            {COMING_SOON_RANKS.map((cs, i) => (
+              <div key={`cs-${i}`} style={{ display: "contents" }}>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 100, flexShrink: 0 }}>
+                  <div style={{ width: 72, height: 72, borderRadius: "50%", background: "rgba(255,255,255,0.02)", border: "2.5px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <span style={{ fontSize: 22, opacity: 0.25 }}>🔒</span>
+                  </div>
+                  <span style={{ ...ui, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.15)", textAlign: "center", marginTop: 8 }}>{cs.name}</span>
+                  <span style={{ ...mono, fontSize: 9, color: "rgba(255,255,255,0.1)", marginTop: 4 }}>???</span>
+                  <span style={{ ...mono, fontSize: 8, color: "rgba(255,255,255,0.1)", marginTop: 2 }}>{cs.min} XP</span>
+                </div>
+                {i < COMING_SOON_RANKS.length - 1 && (
+                  <div style={{ width: 24, height: 2, background: "rgba(255,255,255,0.04)", borderRadius: 1, flexShrink: 0, marginBottom: 52 }} />
+                )}
               </div>
-              {i < 4 && <div style={{ width: 28, height: 2, background: `linear-gradient(90deg, ${RANKS[r].color}44, ${RANKS[(Object.keys(RANKS) as Rank[])[i + 1]].color}44)`, margin: "0 6px 18px", borderRadius: 1 }} />}
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
+        <div style={{ ...ui, fontSize: 11, color: "rgba(255,255,255,0.25)", textAlign: "center", marginTop: 18, fontStyle: "italic" }}>More mythical ranks coming soon…</div>
       </Card>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
@@ -1183,6 +1260,19 @@ function ProfileScreen({ xp, rank, playerName, onNameChange }: { xp: number; ran
   const nextRank = rankKeys[Math.min(rankKeys.indexOf(rank) + 1, rankKeys.length - 1)];
   const [editing, setEditing] = useState(false);
   const [nameInput, setNameInput] = useState(playerName);
+  const [equippedBanner, setEquippedBanner] = useState<string | null>(null);
+  const [equippedAvatar, setEquippedAvatar] = useState<Rank | null>(null);
+
+  // Get all unlocked banners/avatars up to current rank
+  const currentRankIdx = rankKeys.indexOf(rank);
+  const unlockedBanners: { name: string; gradient: string; rank: Rank }[] = [];
+  const unlockedAvatars: Rank[] = [];
+  rankKeys.forEach((r, i) => {
+    if (i <= currentRankIdx) {
+      RANK_BANNERS[r].forEach((b) => unlockedBanners.push({ ...b, rank: r }));
+      unlockedAvatars.push(r);
+    }
+  });
 
   const stats = [
     { val: "1,247", label: "Translations", color: C.cyan, icon: "💬" },
@@ -1199,52 +1289,69 @@ function ProfileScreen({ xp, rank, playerName, onNameChange }: { xp: number; ran
     { icon: "💬", label: "Chatterbox",   earned: false },
   ];
 
+  const activeBanner = unlockedBanners.find((b) => b.name === equippedBanner);
+  const activeAvatarRank = equippedAvatar;
+  const avatarBorderColor = activeAvatarRank ? RANKS[activeAvatarRank].color : cfg.color;
+
   return (
     <Page>
       <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: 20, marginBottom: 20 }}>
-        <Card style={{ padding: 26, borderLeft: `4px solid ${cfg.color}` }} glowColor={cfg.color}>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, textAlign: "center" }}>
-            <div style={{ position: "relative" }}>
-              <div style={{ width: 72, height: 72, borderRadius: 18, background: `linear-gradient(135deg, #1a0808, ${C.surface})`, border: `3px solid ${cfg.color}55`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 34, boxShadow: cfg.glow }}>🧑‍💻</div>
-              <div style={{ position: "absolute", bottom: -4, right: -4 }}><RankBadge rank={rank} size={24} /></div>
-            </div>
-            <div>
-              {editing ? (
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-                  <input
-                    value={nameInput}
-                    onChange={(e) => setNameInput(e.target.value.toUpperCase())}
-                    maxLength={16}
-                    autoFocus
-                    style={{ ...ui, fontSize: 16, fontWeight: 900, color: C.text, background: "rgba(255,26,26,0.05)", border: `1.5px solid ${C.red}44`, borderRadius: 8, padding: "6px 12px", textAlign: "center", outline: "none", width: "100%", boxSizing: "border-box" }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && nameInput.trim()) { onNameChange(nameInput.trim()); setEditing(false); }
-                      if (e.key === "Escape") { setNameInput(playerName); setEditing(false); }
-                    }}
-                  />
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <button onClick={() => { if (nameInput.trim()) { onNameChange(nameInput.trim()); setEditing(false); } }}
-                      style={{ ...ui, fontSize: 10, fontWeight: 700, color: "#fff", background: C.red, border: "none", borderRadius: 6, padding: "4px 12px", cursor: "pointer" }}>Save</button>
-                    <button onClick={() => { setNameInput(playerName); setEditing(false); }}
-                      style={{ ...ui, fontSize: 10, fontWeight: 700, color: C.textMuted, background: "transparent", border: `1px solid ${C.border}`, borderRadius: 6, padding: "4px 12px", cursor: "pointer" }}>Cancel</button>
-                  </div>
+        <Card style={{ padding: 0, overflow: "hidden", borderLeft: `4px solid ${cfg.color}` }} glowColor={cfg.color}>
+          {/* Profile banner */}
+          <div style={{ height: 64, width: "100%", background: activeBanner ? activeBanner.gradient : `linear-gradient(135deg, #0a0a0a, ${C.surface})`, borderBottom: `1.5px solid ${cfg.color}22`, position: "relative", transition: "background 0.4s ease" }}>
+            {activeBanner && <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.2)", backdropFilter: "blur(1px)" }} />}
+            {activeBanner && <div style={{ position: "absolute", bottom: 6, right: 8, ...pixel, fontSize: 6, color: "rgba(255,255,255,0.6)", background: "rgba(0,0,0,0.5)", padding: "2px 6px", borderRadius: 4 }}>{activeBanner.name}</div>}
+          </div>
+          <div style={{ padding: "20px 26px 26px" }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, textAlign: "center", marginTop: -36 }}>
+              <div style={{ position: "relative" }}>
+                <div style={{ width: 72, height: 72, borderRadius: 18, background: `linear-gradient(135deg, #1a0808, ${C.surface})`, border: `3px solid ${avatarBorderColor}55`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 0 16px ${avatarBorderColor}44`, transition: "all 0.3s ease" }}>
+                  {activeAvatarRank ? (
+                    <img src={RANK_SVGS[activeAvatarRank]} alt={activeAvatarRank} style={{ width: 48, height: 48, objectFit: "contain" }} />
+                  ) : (
+                    <span style={{ fontSize: 34 }}>🧑‍💻</span>
+                  )}
                 </div>
-              ) : (
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                  <div style={{ ...ui, fontSize: 18, fontWeight: 900, color: C.text }}>{playerName}</div>
-                  <button onClick={() => setEditing(true)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: C.textMuted, padding: 2 }} title="Edit name">✏️</button>
-                </div>
-              )}
-              <div style={{ ...ui, fontSize: 11, color: C.textMuted, marginTop: 2 }}>Joined June 2024 · #00142</div>
-              <span style={{ ...pixel, fontSize: 7, color: cfg.color, background: cfg.bg, border: `1.5px solid ${cfg.color}44`, padding: "4px 8px", borderRadius: 6, display: "inline-block", marginTop: 8 }}>{rank}</span>
-            </div>
-            <div style={{ width: "100%" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-                <span style={{ ...ui, fontSize: 10, color: C.textMuted }}>→ {nextRank}</span>
-                <span style={{ ...mono, fontSize: 10, color: cfg.color }}>{xp.toLocaleString()} XP</span>
+                <div style={{ position: "absolute", bottom: -4, right: -4 }}><RankBadge rank={rank} size={24} /></div>
               </div>
-              <ProgressBar pct={pct} color={cfg.color} />
-              <div style={{ ...ui, fontSize: 10, color: C.textMuted, marginTop: 3, textAlign: "right" }}>{(cfg.max - xp).toLocaleString()} XP to go</div>
+              <div>
+                {editing ? (
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                    <input
+                      value={nameInput}
+                      onChange={(e) => setNameInput(e.target.value.toUpperCase())}
+                      maxLength={16}
+                      autoFocus
+                      style={{ ...ui, fontSize: 16, fontWeight: 900, color: C.text, background: "rgba(255,26,26,0.05)", border: `1.5px solid ${C.red}44`, borderRadius: 8, padding: "6px 12px", textAlign: "center", outline: "none", width: "100%", boxSizing: "border-box" }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && nameInput.trim()) { onNameChange(nameInput.trim()); setEditing(false); }
+                        if (e.key === "Escape") { setNameInput(playerName); setEditing(false); }
+                      }}
+                    />
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <button onClick={() => { if (nameInput.trim()) { onNameChange(nameInput.trim()); setEditing(false); } }}
+                        style={{ ...ui, fontSize: 10, fontWeight: 700, color: "#fff", background: C.red, border: "none", borderRadius: 6, padding: "4px 12px", cursor: "pointer" }}>Save</button>
+                      <button onClick={() => { setNameInput(playerName); setEditing(false); }}
+                        style={{ ...ui, fontSize: 10, fontWeight: 700, color: C.textMuted, background: "transparent", border: `1px solid ${C.border}`, borderRadius: 6, padding: "4px 12px", cursor: "pointer" }}>Cancel</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                    <div style={{ ...ui, fontSize: 18, fontWeight: 900, color: C.text }}>{playerName}</div>
+                    <button onClick={() => setEditing(true)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: C.textMuted, padding: 2 }} title="Edit name">✏️</button>
+                  </div>
+                )}
+                <div style={{ ...ui, fontSize: 11, color: C.textMuted, marginTop: 2 }}>Joined June 2024 · #00142</div>
+                <span style={{ ...pixel, fontSize: 7, color: cfg.color, background: cfg.bg, border: `1.5px solid ${cfg.color}44`, padding: "4px 8px", borderRadius: 6, display: "inline-block", marginTop: 8 }}>{rank}</span>
+              </div>
+              <div style={{ width: "100%" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+                  <span style={{ ...ui, fontSize: 10, color: C.textMuted }}>→ {nextRank}</span>
+                  <span style={{ ...mono, fontSize: 10, color: cfg.color }}>{xp.toLocaleString()} XP</span>
+                </div>
+                <ProgressBar pct={pct} color={cfg.color} />
+                <div style={{ ...ui, fontSize: 10, color: C.textMuted, marginTop: 3, textAlign: "right" }}>{(cfg.max - xp).toLocaleString()} XP to go</div>
+              </div>
             </div>
           </div>
         </Card>
@@ -1277,6 +1384,102 @@ function ProfileScreen({ xp, rank, playerName, onNameChange }: { xp: number; ran
           </Card>
         </div>
       </div>
+
+      {/* Banner selection */}
+      <Card style={{ padding: 22, marginBottom: 20 }} glowColor={cfg.color}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+          <div style={{ ...ui, fontSize: 14, fontWeight: 800, color: C.text }}>🎨 Profile Banners</div>
+          <span style={{ ...ui, fontSize: 11, color: C.textMuted }}>{unlockedBanners.length} unlocked</span>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10 }}>
+          {/* None option */}
+          <div
+            onClick={() => setEquippedBanner(null)}
+            style={{ height: 60, borderRadius: 10, background: `linear-gradient(135deg, #0a0a0a, ${C.surface})`, border: `2px solid ${!equippedBanner ? C.red : C.border}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s", boxShadow: !equippedBanner ? `0 0 10px ${C.red}33` : "none" }}
+          >
+            <span style={{ ...ui, fontSize: 11, color: C.textMuted, fontWeight: 600 }}>None</span>
+          </div>
+          {unlockedBanners.map((b) => (
+            <div
+              key={b.name}
+              onClick={() => setEquippedBanner(b.name)}
+              style={{ height: 60, borderRadius: 10, background: b.gradient, border: `2px solid ${equippedBanner === b.name ? C.red : "transparent"}`, cursor: "pointer", position: "relative", transition: "all 0.2s", boxShadow: equippedBanner === b.name ? `0 0 10px ${C.red}33` : "none", transform: equippedBanner === b.name ? "scale(1.03)" : "scale(1)" }}
+            >
+              <div style={{ position: "absolute", bottom: 4, left: 6, ...ui, fontSize: 8, color: "rgba(255,255,255,0.7)", fontWeight: 600 }}>{b.name}</div>
+              <div style={{ position: "absolute", top: 4, right: 6, ...pixel, fontSize: 6, color: RANKS[b.rank].color, opacity: 0.8 }}>{b.rank}</div>
+              {equippedBanner === b.name && <div style={{ position: "absolute", top: 4, left: 6, ...ui, fontSize: 8, color: C.red, fontWeight: 800 }}>✓ Equipped</div>}
+            </div>
+          ))}
+          {/* Locked banners from higher ranks */}
+          {rankKeys.slice(currentRankIdx + 1).map((r) =>
+            RANK_BANNERS[r].map((b, bi) => (
+              <div
+                key={`locked-${r}-${bi}`}
+                style={{ height: 60, borderRadius: 10, background: "rgba(255,255,255,0.02)", border: `2px solid rgba(255,255,255,0.05)`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3, opacity: 0.4 }}
+              >
+                <span style={{ fontSize: 14 }}>🔒</span>
+                <span style={{ ...ui, fontSize: 8, color: "rgba(255,255,255,0.3)" }}>Reach {r}</span>
+              </div>
+            ))
+          )}
+          {/* Coming soon banners */}
+          {COMING_SOON_BANNERS.map((cs, i) => (
+            <div
+              key={`coming-soon-${i}`}
+              style={{ height: 60, borderRadius: 10, background: cs.gradient, border: `2px solid rgba(255,255,255,0.04)`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3, opacity: 0.3 }}
+            >
+              <span style={{ fontSize: 12 }}>🔒</span>
+              <span style={{ ...ui, fontSize: 7, color: "rgba(255,255,255,0.2)" }}>Coming soon</span>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* Avatar selection */}
+      <Card style={{ padding: 22, marginBottom: 20 }} glowColor={cfg.color}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+          <div style={{ ...ui, fontSize: 14, fontWeight: 800, color: C.text }}>🛡️ Rank Avatars</div>
+          <span style={{ ...ui, fontSize: 11, color: C.textMuted }}>{unlockedAvatars.length} unlocked</span>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(90px, 1fr))", gap: 12 }}>
+          {/* Default avatar */}
+          <div
+            onClick={() => setEquippedAvatar(null)}
+            style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 8px", borderRadius: 12, cursor: "pointer", background: !equippedAvatar ? "rgba(255,26,26,0.06)" : "rgba(255,255,255,0.02)", border: `2px solid ${!equippedAvatar ? C.red : C.border}`, transition: "all 0.2s", boxShadow: !equippedAvatar ? `0 0 10px ${C.red}33` : "none" }}
+          >
+            <div style={{ width: 52, height: 52, borderRadius: 14, background: `linear-gradient(135deg, #1a0808, ${C.surface})`, border: `2.5px solid ${cfg.color}44`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26 }}>🧑‍💻</div>
+            <span style={{ ...ui, fontSize: 9, color: C.textMuted, fontWeight: 600 }}>Default</span>
+            {!equippedAvatar && <span style={{ ...ui, fontSize: 7, color: C.red, fontWeight: 700 }}>Equipped</span>}
+          </div>
+          {/* Unlocked rank avatars */}
+          {unlockedAvatars.map((r) => (
+            <div
+              key={r}
+              onClick={() => setEquippedAvatar(r)}
+              style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 8px", borderRadius: 12, cursor: "pointer", background: equippedAvatar === r ? `${RANKS[r].bg}` : "rgba(255,255,255,0.02)", border: `2px solid ${equippedAvatar === r ? RANKS[r].color : C.border}`, transition: "all 0.2s", boxShadow: equippedAvatar === r ? `0 0 12px ${RANKS[r].color}44` : "none", transform: equippedAvatar === r ? "scale(1.03)" : "scale(1)" }}
+            >
+              <div style={{ width: 52, height: 52, borderRadius: 14, background: `linear-gradient(135deg, #0a0a0a, ${C.surface})`, border: `2.5px solid ${RANKS[r].color}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: RANKS[r].glow }}>
+                <img src={RANK_SVGS[r]} alt={r} style={{ width: 36, height: 36, objectFit: "contain" }} />
+              </div>
+              <span style={{ ...ui, fontSize: 9, color: RANKS[r].color, fontWeight: 600 }}>{r}</span>
+              {equippedAvatar === r && <span style={{ ...ui, fontSize: 7, color: RANKS[r].color, fontWeight: 700 }}>Equipped</span>}
+            </div>
+          ))}
+          {/* Locked avatars from higher ranks */}
+          {rankKeys.slice(currentRankIdx + 1).map((r) => (
+            <div
+              key={`locked-av-${r}`}
+              style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 8px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: `2px solid rgba(255,255,255,0.05)`, opacity: 0.35 }}
+            >
+              <div style={{ width: 52, height: 52, borderRadius: 14, background: "rgba(255,255,255,0.02)", border: "2.5px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <span style={{ fontSize: 18, opacity: 0.4 }}>🔒</span>
+              </div>
+              <span style={{ ...ui, fontSize: 9, color: "rgba(255,255,255,0.2)", fontWeight: 600 }}>{r}</span>
+              <span style={{ ...ui, fontSize: 7, color: "rgba(255,255,255,0.15)" }}>Reach {RANKS[r].tier}</span>
+            </div>
+          ))}
+        </div>
+      </Card>
     </Page>
   );
 }
@@ -1284,7 +1487,7 @@ function ProfileScreen({ xp, rank, playerName, onNameChange }: { xp: number; ran
 // ─── Root ─────────────────────────────────────────────────────────────────────
 
 export default function App() {
-  const [xp, setXP] = useState(4750);
+  const [xp, setXP] = useState(12000);
   const [playerName, setPlayerName] = useState("PLAYER_ONE");
   const rank = getRank(xp);
   const { pathname } = useLocation();
