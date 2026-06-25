@@ -1,17 +1,83 @@
 import { useState, useEffect, useRef } from "react";
 import { Routes, Route, useNavigate, useLocation, Navigate } from "react-router";
 import { supabase } from "../lib/supabase";
+import confetti from "canvas-confetti";
+
+
+// Rank SVG imports
+import nunoSvg from "../assets/ranks/nunorank.svg";
+import tikbalangSvg from "../assets/ranks/tikbalrank.svg";
+import manananggalSvg from "../assets/ranks/manananggalrank.svg";
+import aswangSvg from "../assets/ranks/aswangrank.svg";
+import sirenaSvg from "../assets/ranks/sirenarank.svg";
+
+// Rank icon imports (for avatars)
+import nunoIcon from "../assets/ranks/icon-nuno.png";
+import tikbalangIcon from "../assets/ranks/icon-tikbalang.png";
+import manananggalIcon from "../assets/ranks/icon-manananggal.png";
+import aswangIcon from "../assets/ranks/icon-aswang.png";
+import sirenaIcon from "../assets/ranks/icon-sirena.png";
 
 type Screen = "login" | "home" | "play" | "mission" | "recording" | "evaluation" | "leaderboard" | "profile" | "achievements" | "daily";
 type Rank = "Nuno" | "Tikbalang" | "Manananggal" | "Aswang" | "Sirena";
+
+const RANK_SVGS: Record<Rank, string> = {
+  Nuno: nunoSvg,
+  Tikbalang: tikbalangSvg,
+  Manananggal: manananggalSvg,
+  Aswang: aswangSvg,
+  Sirena: sirenaSvg,
+};
+
+const RANK_ICONS: Record<Rank, string> = {
+  Nuno: nunoIcon,
+  Tikbalang: tikbalangIcon,
+  Manananggal: manananggalIcon,
+  Aswang: aswangIcon,
+  Sirena: sirenaIcon,
+};
 
 const RANKS: Record<Rank, { color: string; glow: string; bg: string; min: number; max: number; creature: string; tier: string }> = {
   Nuno:        { color: "#cd7f32", glow: "0 0 14px #cd7f3255", bg: "rgba(205,127,50,0.12)",  min: 0,     max: 1000,  creature: "🍄", tier: "Bronze" },
   Tikbalang:   { color: "#b0c4de", glow: "0 0 14px #b0c4de55", bg: "rgba(176,196,222,0.12)", min: 1000,  max: 3000,  creature: "🐴", tier: "Silver" },
   Manananggal: { color: "#ffd700", glow: "0 0 14px #ffd70055", bg: "rgba(255,215,0,0.12)",   min: 3000,  max: 6000,  creature: "🦇", tier: "Gold" },
-  Aswang:      { color: "#ff1a1a", glow: "0 0 14px #ff1a1a55", bg: "rgba(255,26,26,0.12)",   min: 6000,  max: 10000, creature: "👁️", tier: "Platinum" },
-  Sirena:      { color: "#4fc3f7", glow: "0 0 14px #4fc3f755", bg: "rgba(79,195,247,0.12)",  min: 10000, max: 15000, creature: "🧜‍♀️", tier: "Diamond" },
+  Aswang:      { color: "#a8b4c4", glow: "0 0 14px #a8b4c455", bg: "rgba(168,180,196,0.12)", min: 6000,  max: 10000, creature: "👁️", tier: "Platinum" },
+  Sirena:      { color: "#b9f2ff", glow: "0 0 14px #b9f2ff55", bg: "rgba(185,242,255,0.12)", min: 10000, max: 15000, creature: "🧜‍♀️", tier: "Diamond" },
 };
+
+// Coming soon ranks (blacked out placeholders)
+const COMING_SOON_RANKS = [
+  { name: "???", color: "#1a1a1a", glow: "0 0 8px rgba(255,255,255,0.05)", min: "15k" },
+  { name: "???", color: "#1a1a1a", glow: "0 0 8px rgba(255,255,255,0.05)", min: "20k" },
+  { name: "???", color: "#1a1a1a", glow: "0 0 8px rgba(255,255,255,0.05)", min: "30k" },
+];
+
+// Profile banners unlocked at each rank — progressively more premium
+const RANK_BANNERS: Record<Rank, { name: string; gradient: string; unlocked: boolean }[]> = {
+  Nuno: [
+    { name: "Earth Root", gradient: "linear-gradient(120deg, #1a0f05 0%, #2e1a0a 20%, #5c3a1a 40%, #8b5e34 50%, #cd7f32 55%, #8b5e34 60%, #5c3a1a 70%, #2e1a0a 85%, #1a0f05 100%)", unlocked: true },
+  ],
+  Tikbalang: [
+    { name: "Silver Mane", gradient: "linear-gradient(120deg, #0d1520 0%, #1a2d44 15%, #3d5a80 30%, #7a9cb8 42%, #b0c4de 48%, #e8f0f8 52%, #b0c4de 58%, #7a9cb8 68%, #3d5a80 80%, #1a2d44 92%, #0d1520 100%)", unlocked: true },
+  ],
+  Manananggal: [
+    { name: "Golden Wings", gradient: "linear-gradient(120deg, #1a1200 0%, #3d2e00 12%, #6b4e00 24%, #a67c00 36%, #d4a300 44%, #ffd700 48%, #fff8b0 52%, #ffd700 56%, #d4a300 64%, #a67c00 74%, #6b4e00 84%, #3d2e00 92%, #1a1200 100%)", unlocked: true },
+  ],
+  Aswang: [
+    { name: "Platinum Ascent", gradient: "linear-gradient(120deg, #0f1a24 0%, #1a3040 12%, #2d5060 24%, #4a8090 36%, #6eaab8 44%, #8ecad6 48%, #c0e8f0 50%, #e8f8fc 52%, #c0e8f0 54%, #8ecad6 58%, #6eaab8 66%, #4a8090 76%, #2d5060 86%, #1a3040 94%, #0f1a24 100%)", unlocked: true },
+  ],
+  Sirena: [
+    { name: "Diamond Tide", gradient: "linear-gradient(120deg, #05000d 0%, #0f0020 8%, #1a0044 16%, #330088 24%, #5500cc 32%, #7733ff 38%, #9966ff 42%, #bb99ff 46%, #ddccff 48%, #ffffff 50%, #ddccff 52%, #bb99ff 54%, #9966ff 58%, #7733ff 62%, #5500cc 68%, #330088 76%, #1a0044 84%, #0f0020 92%, #05000d 100%)", unlocked: true },
+  ],
+};
+
+// Coming soon banners (locked, future content)
+const COMING_SOON_BANNERS = [
+  { name: "???", gradient: "linear-gradient(135deg, #0a0a0a, #111, #0a0a0a)" },
+  { name: "???", gradient: "linear-gradient(135deg, #0a0a0a, #111, #0a0a0a)" },
+  { name: "???", gradient: "linear-gradient(135deg, #0a0a0a, #111, #0a0a0a)" },
+  { name: "???", gradient: "linear-gradient(135deg, #0a0a0a, #111, #0a0a0a)" },
+];
 
 function getRank(xp: number): Rank {
   if (xp < 1000) return "Nuno";
@@ -79,10 +145,10 @@ function SirenaLogo({ size = 32 }: { size?: number }) {
 // ─── Shared Components ────────────────────────────────────────────────────────
 
 function RankBadge({ rank, size = 32 }: { rank: Rank; size?: number }) {
-  const { color, bg, glow, creature } = RANKS[rank];
+  const { color, bg, glow } = RANKS[rank];
   return (
-    <span title={rank} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: size, height: size, borderRadius: "50%", background: bg, border: `2px solid ${color}66`, fontSize: size * 0.44, flexShrink: 0, boxShadow: glow, animation: "float 3s ease-in-out infinite" }}>
-      {creature}
+    <span title={rank} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: size, height: size, borderRadius: "50%", background: bg, border: `2px solid ${color}66`, flexShrink: 0, boxShadow: glow, overflow: "hidden" }}>
+      <img src={RANK_SVGS[rank]} alt={rank} style={{ width: size * 0.65, height: size * 0.65, objectFit: "contain", display: "block" }} />
     </span>
   );
 }
@@ -264,7 +330,7 @@ function Select({ label, value, onChange, options }: { label: string; value: str
   );
 }
 
-function LoginScreen() {
+function LoginScreen({ cities }: { cities: string[] }) {
   const navigate = useNavigate();
   const [mode, setMode]                 = useState<"login" | "signup">("login");
   const [email, setEmail]               = useState("");
@@ -345,7 +411,7 @@ function LoginScreen() {
                 <Input label="Age" type="number" value={age} onChange={setAge} placeholder="18" />
                 <Select label="Sex" value={sex} onChange={setSex} options={["Male", "Female", "Non-binary", "Prefer not to say"]} />
                 <Select label="Mother Tongue" value={motherTongue} onChange={setMotherTongue} options={LANGUAGES} />
-                <Select label="City" value={city} onChange={setCity} options={CITIES} />
+                <Select label="City" value={city} onChange={setCity} options={cities} />
               </>
             )}
             <Input label="Email" value={email} onChange={setEmail} placeholder="player@sirene.ph" />
@@ -493,8 +559,14 @@ const SOURCE_PHRASES: Record<string, string[]> = {
   Tagalog: ["Kumain ka na ba?", "Magandang umaga, kumusta ka?", "Saan ka pupunta?", "Masaya akong makita ka.", "Ano ang pangalan mo?", "Maraming salamat."],
 };
 
-function PlayScreen({ setChallengePhrase }: { setChallengePhrase: (p: any) => void }) {
+function PlayScreen({ setChallengePhrase, onXP }: { setChallengePhrase: (p: any) => void; onXP?: (xp: number) => void }) {
   const navigate = useNavigate();
+  const onNav = (s: Screen) => navigate(`/${s}`);
+  
+  // Tabs: challenge or blitz
+  const [mode, setMode] = useState<"challenge" | "blitz">("challenge");
+
+  // State for Battle Challenge (the existing screen)
   const [from, setFrom] = useState("English");
   const [to, setTo] = useState("Bisaya");
   const [diff, setDiff] = useState("Normal");
@@ -585,76 +657,357 @@ function PlayScreen({ setChallengePhrase }: { setChallengePhrase: (p: any) => vo
     }
   };
 
+  // State for Vocab Blitz
+  const [blitzFrom, setBlitzFrom] = useState("Tagalog");
+  const [blitzTo, setBlitzTo] = useState("Bisaya");
+  const [blitzLoading, setBlitzLoading] = useState(false);
+  const [blitzError, setBlitzError] = useState("");
+  
+  // Word list and gameplay
+  const [blitzWords, setBlitzWords] = useState<{ word: string; translation: string; explanation: string }[]>([]);
+  const [blitzIdx, setBlitzIdx] = useState(0);
+  const [flipped, setFlipped] = useState(false);
+  const [completed, setCompleted] = useState(false);
+  const [savingQuest, setSavingQuest] = useState(false);
+
+  const startBlitz = async () => {
+    setBlitzError("");
+    setBlitzLoading(true);
+    setCompleted(false);
+    setBlitzIdx(0);
+    setFlipped(false);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      if (!token) {
+        setBlitzError("Not logged in. Please log in first.");
+        setBlitzLoading(false);
+        return;
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/vocab-blitz`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          source_language: blitzFrom.toLowerCase(),
+          target_language: blitzTo.toLowerCase(),
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      }
+
+      const resData = await response.json();
+      if (resData.success && Array.isArray(resData.words) && resData.words.length > 0) {
+        setBlitzWords(resData.words);
+      } else {
+        throw new Error("Invalid response format or empty word list.");
+      }
+    } catch (err: any) {
+      console.error("Error generating Vocab Blitz:", err);
+      setBlitzError(err.message || "Failed to load vocabulary words.");
+    } finally {
+      setBlitzLoading(false);
+    }
+  };
+
+  const handleFinishBlitz = async () => {
+    setSavingQuest(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        alert("User session not found.");
+        setSavingQuest(false);
+        return;
+      }
+
+      // 1. Fetch latest daily quest entry
+      const { data: latestQuest, error: fetchErr } = await supabase
+        .from("daily_quest")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const isToday = (dateStr: string) => {
+        const d = new Date(dateStr);
+        const today = new Date();
+        return d.getDate() === today.getDate() &&
+               d.getMonth() === today.getMonth() &&
+               d.getFullYear() === today.getFullYear();
+      };
+
+      if (latestQuest && isToday(latestQuest.created_at)) {
+        // Update today's existing row
+        const { error: updateErr } = await supabase
+          .from("daily_quest")
+          .update({ vocab_blitz: true })
+          .eq("id", latestQuest.id);
+        if (updateErr) throw updateErr;
+      } else {
+        // Create a new row for today
+        const { error: insertErr } = await supabase
+          .from("daily_quest")
+          .insert({
+            user_id: user.id,
+            vocab_blitz: true,
+          });
+        if (insertErr) throw insertErr;
+      }
+
+      // Confetti!
+      confetti({
+        particleCount: 120,
+        spread: 80,
+        origin: { y: 0.6 }
+      });
+
+      // Award XP locally
+      if (onXP) {
+        onXP(100);
+      }
+
+      setCompleted(true);
+    } catch (err) {
+      console.error("Error updating daily quest:", err);
+      alert("Failed to save progress in daily quests.");
+    } finally {
+      setSavingQuest(false);
+    }
+  };
+
   return (
     <Page maxWidth={660}>
-      <PageHeader title="New Challenge" subtitle="Choose your language, pick a phrase, then battle! ⚔️" />
+      <PageHeader 
+        title={mode === "challenge" ? "New Challenge" : "⚡ Vocab Blitz"} 
+        subtitle={mode === "challenge" ? "Choose your language, pick a phrase, then battle! ⚔️" : "Generate 20 words from AI, learn them, and complete daily quests! 📖"} 
+      />
 
-      <Card style={{ padding: 0, overflow: "hidden", marginBottom: 16, borderTop: `3px solid ${C.red}` }} glowColor={C.red}>
-        <div style={{ padding: "24px 24px 20px", borderBottom: `1.5px solid ${C.border}`, background: "rgba(255,26,26,0.04)" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div style={{ width: 8, height: 8, borderRadius: "50%", background: C.red, boxShadow: `0 0 8px ${C.red}88`, animation: "pulse 1.5s ease-in-out infinite" }} />
-              <span style={{ ...pixel, fontSize: 8, color: C.textMuted, letterSpacing: "0.08em" }}>PHRASE TO TRANSLATE</span>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ ...mono, fontSize: 11, color: C.textMuted }}>{phraseIdx + 1}/{phrases.length}</span>
-              <button onClick={() => setPhraseIdx((i) => (i + 1) % phrases.length)}
-                style={{ background: "rgba(255,26,26,0.08)", border: `1.5px solid ${C.border}`, borderRadius: 8, padding: "5px 12px", color: C.red, cursor: "pointer", fontSize: 11, fontWeight: 700, ...ui, transition: "all 0.15s" }}>Next ↻</button>
-            </div>
-          </div>
-          <p style={{ ...ui, fontSize: 22, fontWeight: 900, color: C.text, margin: 0, lineHeight: 1.4 }}>"{activePhraseText}"</p>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 14 }}>
-            <span style={{ ...ui, fontSize: 12, color: C.textMuted }}>Speak this in</span>
-            <span style={{ ...ui, fontSize: 12, fontWeight: 800, color: C.red, background: `rgba(255,26,26,0.12)`, border: `1.5px solid ${C.red}44`, borderRadius: 6, padding: "3px 10px" }}>{to}</span>
-          </div>
-        </div>
-
-        <div style={{ padding: "22px 24px 26px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 18 }}>
-            <div>
-              <div style={{ ...ui, fontSize: 11, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>Source Language</div>
-              <div style={{ position: "relative" }}>
-                <select value={from} onChange={(e) => { setFrom(e.target.value); setPhraseIdx(0); }} style={selStyle}>{sources.map((l) => <option key={l}>{l}</option>)}</select>
-                <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: C.textMuted, pointerEvents: "none", fontSize: 11 }}>▾</span>
-              </div>
-            </div>
-            <div>
-              <div style={{ ...ui, fontSize: 11, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>Target Dialect</div>
-              <div style={{ position: "relative" }}>
-                <select value={to} onChange={(e) => setTo(e.target.value)} style={selStyle}>{targets.map((l) => <option key={l}>{l}</option>)}</select>
-                <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: C.textMuted, pointerEvents: "none", fontSize: 11 }}>▾</span>
-              </div>
-            </div>
-          </div>
-
-          <div style={{ marginBottom: 22 }}>
-            <div style={{ ...ui, fontSize: 11, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Difficulty</div>
-            <div style={{ display: "flex", gap: 8 }}>
-              {diffs.map((d) => (
-                <button key={d.label} onClick={() => setDiff(d.label)}
-                  style={{ flex: 1, padding: "10px 0", borderRadius: 10, cursor: "pointer", background: diff === d.label ? d.color : "rgba(255,255,255,0.03)", border: `2px solid ${diff === d.label ? d.color : "transparent"}`, color: diff === d.label ? "#fff" : C.textMuted, fontWeight: 800, fontSize: 12, transition: "all 0.2s cubic-bezier(0.34,1.56,0.64,1)", boxShadow: diff === d.label ? `0 4px 14px ${d.color}44` : "none", transform: diff === d.label ? "scale(1.03)" : "scale(1)", ...ui }}
-                >{d.icon} {d.label}</button>
-              ))}
-            </div>
-          </div>
-          <Btn color={C.red} onClick={handleStartChallenge} full size="lg" disabled={loading}>
-            {loading ? "⚔️ Starting..." : "⚔️  Start Challenge"}
-          </Btn>
-        </div>
-      </Card>
-
-      <div style={{ ...pixel, fontSize: 8, color: C.textMuted, letterSpacing: "0.08em", marginBottom: 10 }}>ALL PHRASES</div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-        {phrases.map((p, i) => (
-          <button key={i} onClick={() => setPhraseIdx(i)}
-            style={{ ...ui, textAlign: "left", padding: "11px 14px", borderRadius: 10, border: `1.5px solid ${i === phraseIdx ? C.red + "55" : C.border}`, background: i === phraseIdx ? "rgba(255,26,26,0.06)" : "rgba(255,255,255,0.01)", cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: 12, transform: i === phraseIdx ? "scale(1.01)" : "scale(1)" }}
-          >
-            <span style={{ ...mono, fontSize: 10, color: i === phraseIdx ? C.red : C.textMuted, width: 16, flexShrink: 0 }}>{i + 1}</span>
-            <span style={{ ...ui, fontSize: 13, color: i === phraseIdx ? C.text : C.textMuted, fontWeight: i === phraseIdx ? 700 : 400 }}>{p}</span>
-            {i === phraseIdx && <span style={{ marginLeft: "auto", fontSize: 11, color: C.red, fontWeight: 700 }}>●</span>}
-          </button>
-        ))}
+      {/* Tabs */}
+      <div style={{ display: "flex", background: "rgba(255,26,26,0.05)", border: `2px solid ${C.border}`, borderRadius: 14, padding: 4, marginBottom: 20 }}>
+        <button onClick={() => { setMode("challenge"); setBlitzWords([]); setCompleted(false); }}
+          style={{ flex: 1, padding: "10px", borderRadius: 10, border: "none", cursor: "pointer", background: mode === "challenge" ? C.red : "transparent", color: mode === "challenge" ? "#fff" : C.textMuted, fontWeight: 800, fontSize: 13, transition: "all 0.25s", ...ui }}
+        >⚔️ Battle Challenge</button>
+        <button onClick={() => { setMode("blitz"); setBlitzWords([]); setCompleted(false); }}
+          style={{ flex: 1, padding: "10px", borderRadius: 10, border: "none", cursor: "pointer", background: mode === "blitz" ? C.red : "transparent", color: mode === "blitz" ? "#fff" : C.textMuted, fontWeight: 800, fontSize: 13, transition: "all 0.25s", ...ui }}
+        >⚡ Vocab Blitz</button>
       </div>
+
+      {mode === "challenge" ? (
+        <>
+          <Card style={{ padding: 0, overflow: "hidden", marginBottom: 16, borderTop: `3px solid ${C.red}` }} glowColor={C.red}>
+            <div style={{ padding: "24px 24px 20px", borderBottom: `1.5px solid ${C.border}`, background: "rgba(255,26,26,0.04)" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: C.red, boxShadow: `0 0 8px ${C.red}88`, animation: "pulse 1.5s ease-in-out infinite" }} />
+                  <span style={{ ...pixel, fontSize: 8, color: C.textMuted, letterSpacing: "0.08em" }}>PHRASE TO TRANSLATE</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ ...mono, fontSize: 11, color: C.textMuted }}>{phraseIdx + 1}/{phrases.length}</span>
+                  <button onClick={() => setPhraseIdx((i) => (i + 1) % phrases.length)}
+                    style={{ background: "rgba(255,26,26,0.08)", border: `1.5px solid ${C.border}`, borderRadius: 8, padding: "5px 12px", color: C.red, cursor: "pointer", fontSize: 11, fontWeight: 700, ...ui, transition: "all 0.15s" }}>Next ↻</button>
+                </div>
+              </div>
+              <p style={{ ...ui, fontSize: 22, fontWeight: 900, color: C.text, margin: 0, lineHeight: 1.4 }}>"{activePhraseText}"</p>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 14 }}>
+                <span style={{ ...ui, fontSize: 12, color: C.textMuted }}>Speak this in</span>
+                <span style={{ ...ui, fontSize: 12, fontWeight: 800, color: C.red, background: `rgba(255,26,26,0.12)`, border: `1.5px solid ${C.red}44`, borderRadius: 6, padding: "3px 10px" }}>{to}</span>
+              </div>
+            </div>
+
+            <div style={{ padding: "22px 24px 26px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 18 }}>
+                <div>
+                  <div style={{ ...ui, fontSize: 11, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>Source Language</div>
+                  <div style={{ position: "relative" }}>
+                    <select value={from} onChange={(e) => { setFrom(e.target.value); setPhraseIdx(0); }} style={selStyle}>{sources.map((l) => <option key={l}>{l}</option>)}</select>
+                    <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: C.textMuted, pointerEvents: "none", fontSize: 11 }}>▾</span>
+                  </div>
+                </div>
+                <div>
+                  <div style={{ ...ui, fontSize: 11, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>Target Dialect</div>
+                  <div style={{ position: "relative" }}>
+                    <select value={to} onChange={(e) => setTo(e.target.value)} style={selStyle}>{targets.map((l) => <option key={l}>{l}</option>)}</select>
+                    <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: C.textMuted, pointerEvents: "none", fontSize: 11 }}>▾</span>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ marginBottom: 22 }}>
+                <div style={{ ...ui, fontSize: 11, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Difficulty</div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  {diffs.map((d) => (
+                    <button key={d.label} onClick={() => setDiff(d.label)}
+                      style={{ flex: 1, padding: "10px 0", borderRadius: 10, cursor: "pointer", background: diff === d.label ? d.color : "rgba(255,255,255,0.03)", border: `2px solid ${diff === d.label ? d.color : "transparent"}`, color: diff === d.label ? "#fff" : C.textMuted, fontWeight: 800, fontSize: 12, transition: "all 0.2s cubic-bezier(0.34,1.56,0.64,1)", boxShadow: diff === d.label ? `0 4px 14px ${d.color}44` : "none", transform: diff === d.label ? "scale(1.03)" : "scale(1)", ...ui }}
+                    >{d.icon} {d.label}</button>
+                  ))}
+                </div>
+              </div>
+              <Btn color={C.red} onClick={handleStartChallenge} full size="lg" disabled={loading}>
+                {loading ? "⚔️ Starting..." : "⚔️  Start Challenge"}
+              </Btn>
+            </div>
+          </Card>
+
+          <div style={{ ...pixel, fontSize: 8, color: C.textMuted, letterSpacing: "0.08em", marginBottom: 10 }}>ALL PHRASES</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+            {phrases.map((p, i) => (
+              <button key={i} onClick={() => setPhraseIdx(i)}
+                style={{ ...ui, textAlign: "left", padding: "11px 14px", borderRadius: 10, border: `1.5px solid ${i === phraseIdx ? C.red + "55" : C.border}`, background: i === phraseIdx ? "rgba(255,26,26,0.06)" : "rgba(255,255,255,0.01)", cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: 12, transform: i === phraseIdx ? "scale(1.01)" : "scale(1)" }}
+              >
+                <span style={{ ...mono, fontSize: 10, color: i === phraseIdx ? C.red : C.textMuted, width: 16, flexShrink: 0 }}>{i + 1}</span>
+                <span style={{ ...ui, fontSize: 13, color: i === phraseIdx ? C.text : C.textMuted, fontWeight: i === phraseIdx ? 700 : 400 }}>{p}</span>
+                {i === phraseIdx && <span style={{ marginLeft: "auto", fontSize: 11, color: C.red, fontWeight: 700 }}>●</span>}
+              </button>
+            ))}
+          </div>
+        </>
+      ) : (
+        /* Vocab Blitz Mode */
+        <div>
+          {blitzWords.length === 0 ? (
+            /* Setup State */
+            <Card style={{ padding: 26, borderTop: `3px solid ${C.green}` }} glowColor={C.green}>
+              {blitzLoading ? (
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 0", gap: 20 }}>
+                  <div style={{
+                    width: 40,
+                    height: 40,
+                    border: `3px solid rgba(76,175,125,0.1)`,
+                    borderTop: `3px solid ${C.green}`,
+                    borderRadius: "50%",
+                    animation: "spin 1s linear infinite",
+                    boxShadow: `0 0 10px ${C.green}33`
+                  }} />
+                  <span style={{ ...pixel, fontSize: 8, color: C.textMuted, letterSpacing: 1, animation: "pulse 1.5s infinite" }}>GENERATING 20 WORDS WITH AI...</span>
+                </div>
+              ) : (
+                <div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 20 }}>
+                    <div>
+                      <div style={{ ...ui, fontSize: 11, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>Source Language</div>
+                      <div style={{ position: "relative" }}>
+                        <select value={blitzFrom} onChange={(e) => setBlitzFrom(e.target.value)} style={selStyle}>
+                          {["Tagalog", "English", "Bisaya"].map((l) => <option key={l}>{l}</option>)}
+                        </select>
+                        <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: C.textMuted, pointerEvents: "none", fontSize: 11 }}>▾</span>
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ ...ui, fontSize: 11, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>Target Language</div>
+                      <div style={{ position: "relative" }}>
+                        <select value={blitzTo} onChange={(e) => setBlitzTo(e.target.value)} style={selStyle}>
+                          {["Bisaya", "Cebuano", "Tagalog", "Ilocano", "Hiligaynon", "Waray", "Kapampangan"].map((l) => <option key={l}>{l}</option>)}
+                        </select>
+                        <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: C.textMuted, pointerEvents: "none", fontSize: 11 }}>▾</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {blitzError && (
+                    <div style={{ background: "rgba(255,26,26,0.06)", border: `1.5px solid ${C.red}33`, padding: "10px 14px", borderRadius: 8, color: C.redLight, fontSize: 12, marginBottom: 16, ...ui }}>
+                      ⚠️ {blitzError}
+                    </div>
+                  )}
+
+                  <Btn color={C.green} onClick={startBlitz} full size="lg">⚡ Start Vocab Blitz</Btn>
+                </div>
+              )}
+            </Card>
+          ) : completed ? (
+            /* Victory screen */
+            <Card style={{ padding: 36, textAlign: "center", borderTop: `4px solid ${C.gold}` }} glowColor={C.gold}>
+              <div style={{ fontSize: 54, marginBottom: 16, animation: "bounce 2s infinite" }}>🏆</div>
+              <h2 style={{ ...pixel, fontSize: 14, color: C.gold, letterSpacing: 2, marginBottom: 12 }}>VOCAB BLITZ COMPLETE!</h2>
+              <p style={{ ...ui, fontSize: 14, color: C.text, margin: "0 auto 24px", maxWidth: 380, lineHeight: 1.5 }}>
+                Fantastic! You successfully learned 20 new words today in <b>{blitzFrom} → {blitzTo}</b>. Your daily quest is updated!
+              </p>
+              
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 10, background: "rgba(255,215,0,0.08)", border: `1.5px solid ${C.gold}33`, padding: "12px 24px", borderRadius: 14, marginBottom: 28 }}>
+                <span style={{ fontSize: 20 }}>💎</span>
+                <span style={{ ...mono, fontSize: 18, fontWeight: 800, color: C.gold }}>+100 XP REWARD CLAIMED</span>
+              </div>
+
+              <div>
+                <Btn color={C.red} onClick={() => { setBlitzWords([]); setCompleted(false); setMode("challenge"); }} size="md">Back to Challenges</Btn>
+              </div>
+            </Card>
+          ) : (
+            /* Flashcard screen */
+            <Card style={{ padding: 24, borderTop: `3px solid ${C.green}` }} glowColor={C.green}>
+              {/* Progress */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                <span style={{ ...pixel, fontSize: 8, color: C.textMuted }}>CARD {blitzIdx + 1} OF {blitzWords.length}</span>
+                <span style={{ ...mono, fontSize: 11, color: C.green }}>{Math.round(((blitzIdx) / blitzWords.length) * 100)}%</span>
+              </div>
+              <div style={{ marginBottom: 24 }}>
+                <ProgressBar pct={(blitzIdx / blitzWords.length) * 100} color={C.green} height={6} />
+              </div>
+
+              {/* Word Box */}
+              <div 
+                onClick={() => setFlipped(!flipped)}
+                style={{ 
+                  background: flipped ? "rgba(76,175,125,0.03)" : "rgba(255,255,255,0.01)", 
+                  border: `2px dashed ${flipped ? C.green + "44" : C.border}`, 
+                  borderRadius: 16, 
+                  padding: "48px 24px", 
+                  textAlign: "center", 
+                  marginBottom: 24, 
+                  cursor: "pointer",
+                  minHeight: 200,
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  transition: "all 0.2s"
+                }}
+              >
+                {!flipped ? (
+                  <div>
+                    <div style={{ ...pixel, fontSize: 8, color: C.textMuted, marginBottom: 14, letterSpacing: "0.1em" }}>WORD</div>
+                    <div style={{ ...ui, fontSize: 32, fontWeight: 900, color: C.text }}>{blitzWords[blitzIdx].word}</div>
+                    <div style={{ ...ui, fontSize: 11, color: C.green, marginTop: 24, fontWeight: 700 }}>Click card to reveal translation 👁️</div>
+                  </div>
+                ) : (
+                  <div>
+                    <div style={{ ...pixel, fontSize: 8, color: C.green, marginBottom: 14, letterSpacing: "0.1em" }}>TRANSLATION</div>
+                    <div style={{ ...ui, fontSize: 32, fontWeight: 900, color: C.green }}>{blitzWords[blitzIdx].translation}</div>
+                    <div style={{ width: 40, height: 2, background: C.green + "33", margin: "16px auto" }} />
+                    <p style={{ ...ui, fontSize: 13, color: C.textMuted, margin: 0, maxWidth: 300, lineHeight: 1.5 }}>{blitzWords[blitzIdx].explanation}</p>
+                    <div style={{ ...ui, fontSize: 10, color: C.textMuted, marginTop: 20 }}>Click card to hide translation 👁️‍🗨️</div>
+                  </div>
+                )}
+              </div>
+
+              {/* Navigation buttons */}
+              <div style={{ display: "flex", gap: 12, justifyContent: "space-between", alignItems: "center" }}>
+                <button 
+                  disabled={blitzIdx === 0}
+                  onClick={() => { setBlitzIdx((i) => i - 1); setFlipped(false); }}
+                  style={{ ...ui, fontSize: 12, fontWeight: 700, color: blitzIdx === 0 ? C.textMuted + "44" : C.textMuted, background: "transparent", border: `1.5px solid ${blitzIdx === 0 ? "rgba(255,255,255,0.03)" : C.border}`, borderRadius: 10, padding: "10px 18px", cursor: blitzIdx === 0 ? "not-allowed" : "pointer", transition: "all 0.15s" }}
+                >← Prev</button>
+
+                {blitzIdx < blitzWords.length - 1 ? (
+                  <Btn color={C.green} size="md" onClick={() => { setBlitzIdx((i) => i + 1); setFlipped(false); }}>Next Word →</Btn>
+                ) : (
+                  <Btn color={C.gold} size="md" disabled={savingQuest} onClick={handleFinishBlitz}>
+                    {savingQuest ? "Saving..." : "Finish Blitz 🏆"}
+                  </Btn>
+                )}
+              </div>
+            </Card>
+          )}
+        </div>
+      )}
     </Page>
   );
 }
@@ -943,7 +1296,7 @@ function EvaluationScreen({ challengePhrase, user, refreshProfile }: { challenge
 
 // ─── Screen: Leaderboard ──────────────────────────────────────────────────────
 
-function LeaderboardScreen() {
+function LeaderboardScreen({ cities }: { cities: string[] }) {
   type MainTab = "global" | "language" | "weekly";
   const languages = ["Bisaya", "Hiligaynon", "Ilokano", "Kapampangan", "Waray"] as const;
   type Lang = typeof languages[number];
@@ -979,6 +1332,7 @@ function LeaderboardScreen() {
         } else {
           const mapped = (res.data || []).map((row: any) => ({
             name: row.username,
+            city: row.city,
             xp: Number(row.xp || row.language_xp || row.weekly_xp || 0),
             rank: row.creature_rank || row.language_level || "Nuno",
             flag: "🇵🇭",
@@ -1010,7 +1364,8 @@ function LeaderboardScreen() {
         <div style={{ position: "relative", width: 180 }}>
           <select value={selectedCity} onChange={(e) => setSelectedCity(e.target.value)}
             style={{ ...ui, width: "100%", background: C.surface, border: `1.5px solid ${C.border}`, borderRadius: 10, padding: "8px 32px 8px 12px", color: C.text, fontSize: 12, fontWeight: 700, outline: "none", cursor: "pointer", appearance: "none" }}>
-            {["Global", "Quezon City", "Manila", "Cebu City", "Davao City", "Pasig", "Makati", "Baguio"].map((c) => (
+            <option value="Global">Global</option>
+            {cities.map((c) => (
               <option key={c} value={c}>{c}</option>
             ))}
           </select>
@@ -1085,7 +1440,7 @@ function LeaderboardScreen() {
                     <span style={{ fontSize: 11 }}>{p.flag}</span>
                     {p.me && <span style={{ ...pixel, fontSize: 6, color: "#fff", background: C.red, padding: "2px 6px", borderRadius: 4 }}>YOU</span>}
                   </div>
-                  <span style={{ ...ui, fontSize: 11, color: C.textMuted }}>{p.xp.toFixed(1)} XP · {p.streak}🔥</span>
+                  <span style={{ ...ui, fontSize: 11, color: C.textMuted }}>{p.xp.toFixed(1)} XP · {p.streak}🔥{p.city ? ` · 📍 ${p.city}` : ""}</span>
                 </div>
                 <RankBadge rank={p.rank as Rank} size={26} />
               </Card>
@@ -1100,35 +1455,146 @@ function LeaderboardScreen() {
 // ─── Screen: Achievements ─────────────────────────────────────────────────────
 
 function AchievementsScreen() {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [achievements, setAchievements] = useState({
+    first_blood: false,
+    hot_streak: false,
+    sirena_quest: false,
+    polyglot: false,
+    speed_demon: false,
+    perfect_score: false,
+    top_rank: false,
+    book_worm: false,
+  });
+
+  useEffect(() => {
+    let active = true;
+
+    async function fetchAchievements() {
+      try {
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        if (authError || !user) {
+          if (active) {
+            navigate("/login");
+          }
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from("achievements")
+          .select("*")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (active) {
+          if (error) {
+            console.error("Error fetching achievements:", error);
+          } else if (data) {
+            setAchievements({
+              first_blood: !!data.first_blood,
+              hot_streak: !!data.hot_streak,
+              sirena_quest: !!data.sirena_quest,
+              polyglot: !!data.polyglot,
+              speed_demon: !!data.speed_demon,
+              perfect_score: !!data.perfect_score,
+              top_rank: !!data.top_rank,
+              book_worm: !!data.book_worm,
+            });
+          }
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error("Failed to load session/achievements:", err);
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    fetchAchievements();
+
+    return () => {
+      active = false;
+    };
+  }, [navigate]);
+
   const items = [
-    { icon: "🏆", title: "First Blood",   desc: "Complete your first translation", done: true,  color: C.gold },
-    { icon: "🔥", title: "Hot Streak",    desc: "Maintain a 7-day streak",         done: true,  color: C.orange },
-    { icon: "🧜‍♀️", title: "Sirena Quest",  desc: "Reach Sirena rank",               done: false, color: C.cyan },
-    { icon: "🌍", title: "Polyglot",      desc: "Start learning 5 dialects",       done: false, color: C.green },
-    { icon: "⚡", title: "Speed Demon",   desc: "100 translations in one day",     done: false, color: C.red },
-    { icon: "🎯", title: "Perfect Score", desc: "Score 100 on any evaluation",     done: true,  color: C.green },
-    { icon: "👑", title: "Top Rank",      desc: "Reach #1 on the leaderboard",     done: false, color: C.gold },
-    { icon: "📚", title: "Bookworm",      desc: "Learn 500 phrases",               done: true,  color: C.red },
+    { icon: "🏆", title: "First Blood",   desc: "Complete your first translation", done: achievements.first_blood,   color: C.gold },
+    { icon: "🔥", title: "Hot Streak",    desc: "Maintain a 7-day streak",         done: achievements.hot_streak,    color: C.orange },
+    { icon: "🧜‍♀️", title: "Sirena Quest",  desc: "Reach Sirena rank",               done: achievements.sirena_quest,  color: C.cyan },
+    { icon: "🌍", title: "Polyglot",      desc: "Start learning 5 dialects",       done: achievements.polyglot,      color: C.green },
+    { icon: "⚡", title: "Speed Demon",   desc: "100 translations in one day",     done: achievements.speed_demon,   color: C.red },
+    { icon: "🎯", title: "Perfect Score", desc: "Score 100 on any evaluation",     done: achievements.perfect_score, color: C.green },
+    { icon: "👑", title: "Top Rank",      desc: "Reach #1 on the leaderboard",     done: achievements.top_rank,      color: C.gold },
+    { icon: "📚", title: "Bookworm",      desc: "Learn 500 phrases",               done: achievements.book_worm,     color: C.red },
   ];
+
+  if (loading) {
+    return (
+      <Page>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "50vh", gap: 20 }}>
+          <div style={{
+            width: 40,
+            height: 40,
+            border: `3px solid rgba(255,26,26,0.1)`,
+            borderTop: `3px solid ${C.red}`,
+            borderRadius: "50%",
+            animation: "spin 1s linear infinite",
+            boxShadow: `0 0 10px ${C.red}33`
+          }} />
+          <span style={{ ...pixel, fontSize: 8, color: C.textMuted, letterSpacing: 1, animation: "pulse 1.5s infinite" }}>LOADING ACHIEVEMENTS...</span>
+        </div>
+      </Page>
+    );
+  }
 
   return (
     <Page>
       <PageHeader title="🏆 Achievements" subtitle={`${items.filter((a) => a.done).length} of ${items.length} unlocked — keep going!`} />
 
-      <Card style={{ padding: 22, marginBottom: 24, borderTop: `3px solid ${C.red}` }} glowColor={C.red}>
-        <div style={{ ...pixel, fontSize: 9, color: C.text, marginBottom: 14, letterSpacing: "0.05em" }}>MYTHICAL RANK PATH</div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          {(Object.keys(RANKS) as Rank[]).map((r, i) => (
-            <div key={r} style={{ display: "flex", alignItems: "center" }}>
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
-                <RankBadge rank={r} size={38} />
-                <span style={{ ...ui, fontSize: 10, fontWeight: 700, color: RANKS[r].color }}>{r}</span>
-                <span style={{ ...mono, fontSize: 8, color: C.textMuted }}>{RANKS[r].min / 1000}k XP</span>
+      <Card style={{ padding: "28px 20px", marginBottom: 24, borderTop: `3px solid ${C.red}` }} glowColor={C.red}>
+        <div style={{ ...pixel, fontSize: 9, color: C.text, marginBottom: 24, letterSpacing: "0.05em" }}>MYTHICAL RANK PATH</div>
+        <div style={{ overflowX: "auto", paddingBottom: 8 }}>
+          <div style={{ display: "inline-flex", alignItems: "center" }}>
+            {(Object.keys(RANKS) as Rank[]).map((r, i) => {
+              return (
+                <div key={r} style={{ display: "contents" }}>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 100, flexShrink: 0 }}>
+                    <div style={{ width: 72, height: 72, borderRadius: "50%", background: RANKS[r].bg, border: `2.5px solid ${RANKS[r].color}66`, boxShadow: RANKS[r].glow, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <img src={RANK_SVGS[r]} alt={r} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                    </div>
+                    <span style={{ ...ui, fontSize: 11, fontWeight: 700, color: RANKS[r].color, textAlign: "center", marginTop: 8 }}>{r}</span>
+                    <span style={{ ...mono, fontSize: 9, color: C.textMuted, marginTop: 4 }}>{RANKS[r].tier}</span>
+                    <span style={{ ...mono, fontSize: 8, color: C.textMuted, marginTop: 2 }}>{RANKS[r].min / 1000}k XP</span>
+                  </div>
+                  {i < Object.keys(RANKS).length - 1 && (
+                    <div style={{ width: 24, height: 2, background: `linear-gradient(90deg, ${RANKS[r].color}55, ${RANKS[(Object.keys(RANKS) as Rank[])[i + 1]].color}55)`, borderRadius: 1, flexShrink: 0, marginBottom: 52 }} />
+                  )}
+                </div>
+              );
+            })}
+            {/* Connector from last rank to coming soon */}
+            <div style={{ width: 24, height: 2, background: `linear-gradient(90deg, ${RANKS.Sirena.color}44, rgba(255,255,255,0.08))`, borderRadius: 1, flexShrink: 0, marginBottom: 52 }} />
+            {/* Coming soon blacked-out ranks */}
+            {COMING_SOON_RANKS.map((cs, i) => (
+              <div key={`cs-${i}`} style={{ display: "contents" }}>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 100, flexShrink: 0 }}>
+                  <div style={{ width: 72, height: 72, borderRadius: "50%", background: "rgba(255,255,255,0.02)", border: "2.5px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <span style={{ fontSize: 22, opacity: 0.25 }}>🔒</span>
+                  </div>
+                  <span style={{ ...ui, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.15)", textAlign: "center", marginTop: 8 }}>{cs.name}</span>
+                  <span style={{ ...mono, fontSize: 9, color: "rgba(255,255,255,0.1)", marginTop: 4 }}>???</span>
+                  <span style={{ ...mono, fontSize: 8, color: "rgba(255,255,255,0.1)", marginTop: 2 }}>{cs.min} XP</span>
+                </div>
+                {i < COMING_SOON_RANKS.length - 1 && (
+                  <div style={{ width: 24, height: 2, background: "rgba(255,255,255,0.04)", borderRadius: 1, flexShrink: 0, marginBottom: 52 }} />
+                )}
               </div>
-              {i < 4 && <div style={{ width: 28, height: 2, background: `linear-gradient(90deg, ${RANKS[r].color}44, ${RANKS[(Object.keys(RANKS) as Rank[])[i + 1]].color}44)`, margin: "0 6px 18px", borderRadius: 1 }} />}
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
+        <div style={{ ...ui, fontSize: 11, color: "rgba(255,255,255,0.25)", textAlign: "center", marginTop: 18, fontStyle: "italic" }}>More mythical ranks coming soon…</div>
       </Card>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
@@ -1149,13 +1615,111 @@ function AchievementsScreen() {
 
 function DailyScreen() {
   const navigate = useNavigate();
-  const onNav = (s: Screen) => navigate(`/${s}`);
+  const [loading, setLoading] = useState(true);
+  const [dailyQuest, setDailyQuest] = useState({
+    translation_sprint: false,
+    accent_master: false,
+    vocab_blitz: false,
+    community_share: false,
+  });
+  const [timeLeft, setTimeLeft] = useState("");
+
+  useEffect(() => {
+    let active = true;
+
+    async function fetchDailyQuests() {
+      try {
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        if (authError || !user) {
+          if (active) {
+            navigate("/login");
+          }
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from("daily_quest")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (active) {
+          if (error) {
+            console.error("Error fetching daily quests:", error);
+          } else if (data) {
+            setDailyQuest({
+              translation_sprint: !!data.translation_sprint,
+              accent_master: !!data.accent_master,
+              vocab_blitz: !!data.vocab_blitz,
+              community_share: !!data.community_share,
+            });
+          }
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error("Failed to load session/daily quests:", err);
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    fetchDailyQuests();
+
+    return () => {
+      active = false;
+    };
+  }, [navigate]);
+
+  useEffect(() => {
+    const calculateTimeLeft = () => {
+      const now = new Date();
+      const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
+      const diff = midnight.getTime() - now.getTime();
+      
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff / (1000 * 60)) % 60);
+      const seconds = Math.floor((diff / 1000) % 60);
+
+      const pad = (num: number) => String(num).padStart(2, "0");
+      return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+    };
+
+    setTimeLeft(calculateTimeLeft());
+    const interval = setInterval(() => {
+      setTimeLeft(calculateTimeLeft());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const quests = [
-    { title: "Translation Sprint", desc: "Translate 10 phrases in 5 minutes", xp: 200, color: C.red, icon: "⚡", done: false },
-    { title: "Accent Master",      desc: "Score 90+ on pronunciation",         xp: 150, color: C.cyan, icon: "🎤", done: true  },
-    { title: "Vocab Blitz",        desc: "Learn 20 new words today",           xp: 100, color: C.green, icon: "📖", done: false },
-    { title: "Community Share",    desc: "Contribute 5 voice recordings",      xp: 75,  color: C.gold, icon: "🤝", done: false },
+    { title: "Translation Sprint", desc: "Translate 10 phrases today",           xp: 200, color: C.red, icon: "⚡", done: dailyQuest.translation_sprint },
+    { title: "Accent Master",      desc: "Score 90+ on pronunciation",         xp: 150, color: C.cyan, icon: "🎤", done: dailyQuest.accent_master },
+    { title: "Vocab Blitz",        desc: "Learn 20 new words today",           xp: 100, color: C.green, icon: "📖", done: dailyQuest.vocab_blitz },
+    { title: "Community Share",    desc: "Contribute 5 voice recordings",      xp: 75,  color: C.gold, icon: "🤝", done: dailyQuest.community_share },
   ];
+
+  if (loading) {
+    return (
+      <Page>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "50vh", gap: 20 }}>
+          <div style={{
+            width: 40,
+            height: 40,
+            border: `3px solid rgba(255,26,26,0.1)`,
+            borderTop: `3px solid ${C.red}`,
+            borderRadius: "50%",
+            animation: "spin 1s linear infinite",
+            boxShadow: `0 0 10px ${C.red}33`
+          }} />
+          <span style={{ ...pixel, fontSize: 8, color: C.textMuted, letterSpacing: 1, animation: "pulse 1.5s infinite" }}>LOADING QUESTS...</span>
+        </div>
+      </Page>
+    );
+  }
 
   return (
     <Page maxWidth={700}>
@@ -1163,7 +1727,7 @@ function DailyScreen() {
         <PageHeader title="⚡ Daily Quests" subtitle="Complete all 4 for a bonus XP reward!" />
         <Card style={{ padding: "14px 20px", textAlign: "center", borderTop: `3px solid ${C.red}` }} glowColor={C.red}>
           <div style={{ ...pixel, fontSize: 7, color: C.textMuted, marginBottom: 4, letterSpacing: "0.1em" }}>RESETS IN</div>
-          <div style={{ ...mono, fontSize: 20, color: C.red, fontWeight: 700, letterSpacing: 3, textShadow: `0 0 12px ${C.red}55` }}>14:23:07</div>
+          <div style={{ ...mono, fontSize: 20, color: C.red, fontWeight: 700, letterSpacing: 3, textShadow: `0 0 12px ${C.red}55` }}>{timeLeft}</div>
           <div style={{ display: "flex", gap: 4, justifyContent: "center", marginTop: 8 }}>
             {quests.map((q, i) => <div key={i} style={{ width: 20, height: 5, borderRadius: 3, background: q.done ? C.red : "rgba(255,255,255,0.06)", boxShadow: q.done ? `0 0 6px ${C.red}66` : "none", transition: "all 0.3s" }} />)}
           </div>
@@ -1185,7 +1749,7 @@ function DailyScreen() {
               </div>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
                 <span style={{ ...mono, fontSize: 12, fontWeight: 800, color: C.gold }}>+{q.xp} XP</span>
-                {!q.done && <Btn color={q.color} size="sm" onClick={() => onNav("mission")}>Start →</Btn>}
+                {!q.done && <Btn color={q.color} size="sm" onClick={() => navigate("/play")}>Start →</Btn>}
               </div>
             </div>
           </Card>
@@ -1204,6 +1768,19 @@ function ProfileScreen({ xp, rank, playerName, onNameChange }: { xp: number; ran
   const nextRank = rankKeys[Math.min(rankKeys.indexOf(rank) + 1, rankKeys.length - 1)];
   const [editing, setEditing] = useState(false);
   const [nameInput, setNameInput] = useState(playerName);
+  const [equippedBanner, setEquippedBanner] = useState<string | null>(null);
+  const [equippedAvatar, setEquippedAvatar] = useState<Rank | null>(null);
+
+  // Get all unlocked banners/avatars up to current rank
+  const currentRankIdx = rankKeys.indexOf(rank);
+  const unlockedBanners: { name: string; gradient: string; rank: Rank }[] = [];
+  const unlockedAvatars: Rank[] = [];
+  rankKeys.forEach((r, i) => {
+    if (i <= currentRankIdx) {
+      RANK_BANNERS[r].forEach((b) => unlockedBanners.push({ ...b, rank: r }));
+      unlockedAvatars.push(r);
+    }
+  });
 
   const stats = [
     { val: "1,247", label: "Translations", color: C.cyan, icon: "💬" },
@@ -1220,52 +1797,69 @@ function ProfileScreen({ xp, rank, playerName, onNameChange }: { xp: number; ran
     { icon: "💬", label: "Chatterbox",   earned: false },
   ];
 
+  const activeBanner = unlockedBanners.find((b) => b.name === equippedBanner);
+  const activeAvatarRank = equippedAvatar;
+  const avatarBorderColor = activeAvatarRank ? RANKS[activeAvatarRank].color : cfg.color;
+
   return (
     <Page>
       <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: 20, marginBottom: 20 }}>
-        <Card style={{ padding: 26, borderLeft: `4px solid ${cfg.color}` }} glowColor={cfg.color}>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, textAlign: "center" }}>
-            <div style={{ position: "relative" }}>
-              <div style={{ width: 72, height: 72, borderRadius: 18, background: `linear-gradient(135deg, #1a0808, ${C.surface})`, border: `3px solid ${cfg.color}55`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 34, boxShadow: cfg.glow }}>🧑‍💻</div>
-              <div style={{ position: "absolute", bottom: -4, right: -4 }}><RankBadge rank={rank} size={24} /></div>
-            </div>
-            <div>
-              {editing ? (
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-                  <input
-                    value={nameInput}
-                    onChange={(e) => setNameInput(e.target.value.toUpperCase())}
-                    maxLength={16}
-                    autoFocus
-                    style={{ ...ui, fontSize: 16, fontWeight: 900, color: C.text, background: "rgba(255,26,26,0.05)", border: `1.5px solid ${C.red}44`, borderRadius: 8, padding: "6px 12px", textAlign: "center", outline: "none", width: "100%", boxSizing: "border-box" }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && nameInput.trim()) { onNameChange(nameInput.trim()); setEditing(false); }
-                      if (e.key === "Escape") { setNameInput(playerName); setEditing(false); }
-                    }}
-                  />
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <button onClick={() => { if (nameInput.trim()) { onNameChange(nameInput.trim()); setEditing(false); } }}
-                      style={{ ...ui, fontSize: 10, fontWeight: 700, color: "#fff", background: C.red, border: "none", borderRadius: 6, padding: "4px 12px", cursor: "pointer" }}>Save</button>
-                    <button onClick={() => { setNameInput(playerName); setEditing(false); }}
-                      style={{ ...ui, fontSize: 10, fontWeight: 700, color: C.textMuted, background: "transparent", border: `1px solid ${C.border}`, borderRadius: 6, padding: "4px 12px", cursor: "pointer" }}>Cancel</button>
-                  </div>
+        <Card style={{ padding: 0, overflow: "hidden", borderLeft: `4px solid ${cfg.color}` }} glowColor={cfg.color}>
+          {/* Profile banner */}
+          <div style={{ height: 90, width: "100%", background: activeBanner ? activeBanner.gradient : `linear-gradient(135deg, #0a0a0a, ${C.surface})`, borderBottom: `1.5px solid ${cfg.color}22`, position: "relative", transition: "all 0.4s ease" }}>
+            {activeBanner && <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.3) 100%)" }} />}
+            {activeBanner && <div style={{ position: "absolute", bottom: 8, right: 10, ...pixel, fontSize: 6, color: "rgba(255,255,255,0.7)", background: "rgba(0,0,0,0.6)", padding: "3px 8px", borderRadius: 4, backdropFilter: "blur(4px)" }}>{activeBanner.name}</div>}
+          </div>
+          <div style={{ padding: "20px 26px 26px" }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, textAlign: "center", marginTop: -36 }}>
+              <div style={{ position: "relative" }}>
+                <div style={{ width: 100, height: 100, borderRadius: 22, background: `linear-gradient(135deg, #1a0808, ${C.surface})`, border: `3px solid ${avatarBorderColor}55`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 0 16px ${avatarBorderColor}44`, transition: "all 0.3s ease", overflow: "hidden" }}>
+                  {activeAvatarRank ? (
+                    <img src={RANK_ICONS[activeAvatarRank]} alt={activeAvatarRank} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : (
+                    <span style={{ fontSize: 34 }}>🧑‍💻</span>
+                  )}
                 </div>
-              ) : (
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                  <div style={{ ...ui, fontSize: 18, fontWeight: 900, color: C.text }}>{playerName}</div>
-                  <button onClick={() => setEditing(true)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: C.textMuted, padding: 2 }} title="Edit name">✏️</button>
-                </div>
-              )}
-              <div style={{ ...ui, fontSize: 11, color: C.textMuted, marginTop: 2 }}>Joined June 2024 · #00142</div>
-              <span style={{ ...pixel, fontSize: 7, color: cfg.color, background: cfg.bg, border: `1.5px solid ${cfg.color}44`, padding: "4px 8px", borderRadius: 6, display: "inline-block", marginTop: 8 }}>{rank}</span>
-            </div>
-            <div style={{ width: "100%" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-                <span style={{ ...ui, fontSize: 10, color: C.textMuted }}>→ {nextRank}</span>
-                <span style={{ ...mono, fontSize: 10, color: cfg.color }}>{xp.toLocaleString()} XP</span>
+                <div style={{ position: "absolute", bottom: -4, right: -4 }}><RankBadge rank={rank} size={24} /></div>
               </div>
-              <ProgressBar pct={pct} color={cfg.color} />
-              <div style={{ ...ui, fontSize: 10, color: C.textMuted, marginTop: 3, textAlign: "right" }}>{(cfg.max - xp).toLocaleString()} XP to go</div>
+              <div>
+                {editing ? (
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                    <input
+                      value={nameInput}
+                      onChange={(e) => setNameInput(e.target.value.toUpperCase())}
+                      maxLength={16}
+                      autoFocus
+                      style={{ ...ui, fontSize: 16, fontWeight: 900, color: C.text, background: "rgba(255,26,26,0.05)", border: `1.5px solid ${C.red}44`, borderRadius: 8, padding: "6px 12px", textAlign: "center", outline: "none", width: "100%", boxSizing: "border-box" }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && nameInput.trim()) { onNameChange(nameInput.trim()); setEditing(false); }
+                        if (e.key === "Escape") { setNameInput(playerName); setEditing(false); }
+                      }}
+                    />
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <button onClick={() => { if (nameInput.trim()) { onNameChange(nameInput.trim()); setEditing(false); } }}
+                        style={{ ...ui, fontSize: 10, fontWeight: 700, color: "#fff", background: C.red, border: "none", borderRadius: 6, padding: "4px 12px", cursor: "pointer" }}>Save</button>
+                      <button onClick={() => { setNameInput(playerName); setEditing(false); }}
+                        style={{ ...ui, fontSize: 10, fontWeight: 700, color: C.textMuted, background: "transparent", border: `1px solid ${C.border}`, borderRadius: 6, padding: "4px 12px", cursor: "pointer" }}>Cancel</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                    <div style={{ ...ui, fontSize: 18, fontWeight: 900, color: C.text }}>{playerName}</div>
+                    <button onClick={() => setEditing(true)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: C.textMuted, padding: 2 }} title="Edit name">✏️</button>
+                  </div>
+                )}
+                <div style={{ ...ui, fontSize: 11, color: C.textMuted, marginTop: 2 }}>Joined June 2024 · #00142</div>
+                <span style={{ ...pixel, fontSize: 7, color: cfg.color, background: cfg.bg, border: `1.5px solid ${cfg.color}44`, padding: "4px 8px", borderRadius: 6, display: "inline-block", marginTop: 8 }}>{rank}</span>
+              </div>
+              <div style={{ width: "100%" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+                  <span style={{ ...ui, fontSize: 10, color: C.textMuted }}>→ {nextRank}</span>
+                  <span style={{ ...mono, fontSize: 10, color: cfg.color }}>{xp.toLocaleString()} XP</span>
+                </div>
+                <ProgressBar pct={pct} color={cfg.color} />
+                <div style={{ ...ui, fontSize: 10, color: C.textMuted, marginTop: 3, textAlign: "right" }}>{(cfg.max - xp).toLocaleString()} XP to go</div>
+              </div>
             </div>
           </div>
         </Card>
@@ -1298,6 +1892,103 @@ function ProfileScreen({ xp, rank, playerName, onNameChange }: { xp: number; ran
           </Card>
         </div>
       </div>
+
+      {/* Banner selection */}
+      <Card style={{ padding: 22, marginBottom: 20 }} glowColor={cfg.color}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+          <div style={{ ...ui, fontSize: 14, fontWeight: 800, color: C.text }}>🎨 Profile Banners</div>
+          <span style={{ ...ui, fontSize: 11, color: C.textMuted }}>{unlockedBanners.length} unlocked</span>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10 }}>
+          {/* None option */}
+          <div
+            onClick={() => setEquippedBanner(null)}
+            style={{ height: 72, borderRadius: 12, background: `linear-gradient(135deg, #0a0a0a, ${C.surface})`, border: `2px solid ${!equippedBanner ? C.red : C.border}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s", boxShadow: !equippedBanner ? `0 0 10px ${C.red}33` : "none" }}
+          >
+            <span style={{ ...ui, fontSize: 11, color: C.textMuted, fontWeight: 600 }}>None</span>
+          </div>
+          {unlockedBanners.map((b) => (
+            <div
+              key={b.name}
+              onClick={() => setEquippedBanner(b.name)}
+              style={{ height: 72, borderRadius: 12, background: b.gradient, border: `2px solid ${equippedBanner === b.name ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.06)"}`, cursor: "pointer", position: "relative", transition: "all 0.25s cubic-bezier(0.34,1.56,0.64,1)", boxShadow: equippedBanner === b.name ? `0 4px 20px rgba(0,0,0,0.4), inset 0 0 30px rgba(255,255,255,0.05)` : "0 2px 8px rgba(0,0,0,0.2)", transform: equippedBanner === b.name ? "scale(1.04)" : "scale(1)" }}
+            >
+              <div style={{ position: "absolute", inset: 0, borderRadius: 10, background: "linear-gradient(180deg, rgba(255,255,255,0.06) 0%, transparent 40%, rgba(0,0,0,0.3) 100%)" }} />
+              <div style={{ position: "absolute", bottom: 6, left: 8, ...ui, fontSize: 9, color: "rgba(255,255,255,0.85)", fontWeight: 700, textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}>{b.name}</div>
+              <div style={{ position: "absolute", top: 6, right: 8, ...pixel, fontSize: 6, color: RANKS[b.rank].color, opacity: 0.9, textShadow: `0 0 6px ${RANKS[b.rank].color}66` }}>{b.rank}</div>
+              {equippedBanner === b.name && <div style={{ position: "absolute", top: 6, left: 8, ...ui, fontSize: 8, color: "#fff", fontWeight: 800, textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>✓ Equipped</div>}
+            </div>
+          ))}
+          {/* Locked banners from higher ranks */}
+          {rankKeys.slice(currentRankIdx + 1).map((r) =>
+            RANK_BANNERS[r].map((b, bi) => (
+              <div
+                key={`locked-${r}-${bi}`}
+                style={{ height: 72, borderRadius: 12, background: "rgba(255,255,255,0.02)", border: `2px solid rgba(255,255,255,0.05)`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3, opacity: 0.4 }}
+              >
+                <span style={{ fontSize: 14 }}>🔒</span>
+                <span style={{ ...ui, fontSize: 8, color: "rgba(255,255,255,0.3)" }}>Reach {r}</span>
+              </div>
+            ))
+          )}
+          {/* Coming soon banners */}
+          {COMING_SOON_BANNERS.map((cs, i) => (
+            <div
+              key={`coming-soon-${i}`}
+              style={{ height: 72, borderRadius: 12, background: cs.gradient, border: `2px solid rgba(255,255,255,0.04)`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3, opacity: 0.3 }}
+            >
+              <span style={{ fontSize: 12 }}>🔒</span>
+              <span style={{ ...ui, fontSize: 7, color: "rgba(255,255,255,0.2)" }}>Coming soon</span>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* Avatar selection */}
+      <Card style={{ padding: 22, marginBottom: 20 }} glowColor={cfg.color}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+          <div style={{ ...ui, fontSize: 14, fontWeight: 800, color: C.text }}>🛡️ Rank Avatars</div>
+          <span style={{ ...ui, fontSize: 11, color: C.textMuted }}>{unlockedAvatars.length} unlocked</span>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(90px, 1fr))", gap: 12 }}>
+          {/* Default avatar */}
+          <div
+            onClick={() => setEquippedAvatar(null)}
+            style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 8px", borderRadius: 12, cursor: "pointer", background: !equippedAvatar ? "rgba(255,26,26,0.06)" : "rgba(255,255,255,0.02)", border: `2px solid ${!equippedAvatar ? C.red : C.border}`, transition: "all 0.2s", boxShadow: !equippedAvatar ? `0 0 10px ${C.red}33` : "none" }}
+          >
+            <div style={{ width: 52, height: 52, borderRadius: 14, background: `linear-gradient(135deg, #1a0808, ${C.surface})`, border: `2.5px solid ${cfg.color}44`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26 }}>🧑‍💻</div>
+            <span style={{ ...ui, fontSize: 9, color: C.textMuted, fontWeight: 600 }}>Default</span>
+            {!equippedAvatar && <span style={{ ...ui, fontSize: 7, color: C.red, fontWeight: 700 }}>Equipped</span>}
+          </div>
+          {/* Unlocked rank avatars */}
+          {unlockedAvatars.map((r) => (
+            <div
+              key={r}
+              onClick={() => setEquippedAvatar(r)}
+              style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 8px", borderRadius: 12, cursor: "pointer", background: equippedAvatar === r ? `${RANKS[r].bg}` : "rgba(255,255,255,0.02)", border: `2px solid ${equippedAvatar === r ? RANKS[r].color : C.border}`, transition: "all 0.2s", boxShadow: equippedAvatar === r ? `0 0 12px ${RANKS[r].color}44` : "none", transform: equippedAvatar === r ? "scale(1.03)" : "scale(1)" }}
+            >
+              <div style={{ width: 52, height: 52, borderRadius: 14, background: `linear-gradient(135deg, #0a0a0a, ${C.surface})`, border: `2.5px solid ${RANKS[r].color}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: RANKS[r].glow, overflow: "hidden" }}>
+                <img src={RANK_ICONS[r]} alt={r} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              </div>
+              <span style={{ ...ui, fontSize: 9, color: RANKS[r].color, fontWeight: 600 }}>{r}</span>
+              {equippedAvatar === r && <span style={{ ...ui, fontSize: 7, color: RANKS[r].color, fontWeight: 700 }}>Equipped</span>}
+            </div>
+          ))}
+          {/* Locked avatars from higher ranks */}
+          {rankKeys.slice(currentRankIdx + 1).map((r) => (
+            <div
+              key={`locked-av-${r}`}
+              style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 8px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: `2px solid rgba(255,255,255,0.05)`, opacity: 0.35 }}
+            >
+              <div style={{ width: 52, height: 52, borderRadius: 14, background: "rgba(255,255,255,0.02)", border: "2.5px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <span style={{ fontSize: 18, opacity: 0.4 }}>🔒</span>
+              </div>
+              <span style={{ ...ui, fontSize: 9, color: "rgba(255,255,255,0.2)", fontWeight: 600 }}>{r}</span>
+              <span style={{ ...ui, fontSize: 7, color: "rgba(255,255,255,0.15)" }}>Reach {RANKS[r].tier}</span>
+            </div>
+          ))}
+        </div>
+      </Card>
     </Page>
   );
 }
@@ -1309,6 +2000,7 @@ export default function App() {
   const [playerName, setPlayerName] = useState("PLAYER_ONE");
   const [user, setUser] = useState<any>(null);
   const [challengePhrase, setChallengePhrase] = useState<any>(null);
+  const [citiesList, setCitiesList] = useState<string[]>(CITIES);
   const rank = getRank(xp);
   const { pathname } = useLocation();
   const isLogin = pathname === "/" || pathname === "/login";
@@ -1346,6 +2038,24 @@ export default function App() {
     }
   }, [user]);
 
+  useEffect(() => {
+    supabase
+      .from("cities")
+      .select("name")
+      .order("name", { ascending: true })
+      .then(({ data, error }) => {
+        if (!error && data && data.length > 0) {
+          const names = data.map((d: any) => d.name);
+          const hasOther = names.includes("Other");
+          const filtered = names.filter((name: string) => name !== "Other");
+          if (hasOther) {
+            filtered.push("Other");
+          }
+          setCitiesList(filtered);
+        }
+      });
+  }, []);
+
   return (
     <div style={{ ...ui, background: C.bg, minHeight: "100vh", color: C.text }}>
       {/* Ambient red gradient — subtle presence */}
@@ -1354,13 +2064,13 @@ export default function App() {
       <div style={{ position: "relative", zIndex: 1 }}>
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
-          <Route path="/login"        element={<LoginScreen />} />
+          <Route path="/login"        element={<LoginScreen cities={citiesList} />} />
           <Route path="/home"         element={<HomeScreen xp={xp} rank={rank} playerName={playerName} />} />
-          <Route path="/play"         element={<PlayScreen setChallengePhrase={setChallengePhrase} />} />
+          <Route path="/play"         element={<PlayScreen setChallengePhrase={setChallengePhrase} onXP={(n) => setXP((p) => p + n)} />} />
           <Route path="/mission"      element={<MissionScreen challengePhrase={challengePhrase} />} />
           <Route path="/recording"    element={<RecordingScreen challengePhrase={challengePhrase} />} />
           <Route path="/evaluation"   element={<EvaluationScreen challengePhrase={challengePhrase} user={user} refreshProfile={refreshProfile} />} />
-          <Route path="/leaderboard"  element={<LeaderboardScreen />} />
+          <Route path="/leaderboard"  element={<LeaderboardScreen cities={citiesList} />} />
           <Route path="/achievements" element={<AchievementsScreen />} />
           <Route path="/daily"        element={<DailyScreen />} />
           <Route path="/profile"      element={<ProfileScreen xp={xp} rank={rank} playerName={playerName} onNameChange={setPlayerName} />} />

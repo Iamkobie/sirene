@@ -371,3 +371,33 @@ VALUES
 ('Tagalog', 'Bisaya', 'Maaari mo ba akong tulungan sa aking ginagawa?', 'Mahimo ba nimo akong tabangan sa akong ginabuhat?', 'Ma-hi-mo ba ni-mo a-kong ta-ba-ngan sa a-kong gi-na-bu-hat?', 'Expert', 100),
 ('English', 'Bisaya', 'Could you please help me with what I am doing?', 'Mahimo ba nimo akong tabangan sa akong ginabuhat?', 'Ma-hi-mo ba ni-mo a-kong ta-ba-ngan sa a-kong gi-na-bu-hat?', 'Expert', 100)
 ON CONFLICT (source_text, target_language) DO NOTHING;
+
+-- ==========================================
+-- 7. CITIES TABLE & SEED DATA
+-- ==========================================
+
+CREATE TABLE IF NOT EXISTS public.cities (
+    id SERIAL PRIMARY KEY,
+    name TEXT UNIQUE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enable RLS
+ALTER TABLE public.cities ENABLE ROW LEVEL SECURITY;
+
+-- Allow public read access to cities
+DROP POLICY IF EXISTS "Allow public read access to cities" ON public.cities;
+CREATE POLICY "Allow public read access to cities" 
+ON public.cities FOR SELECT USING (true);
+
+-- Populate list of Philippine cities
+INSERT INTO public.cities (name) VALUES
+('Quezon City'),
+('Manila'),
+('Cebu City'),
+('Davao City'),
+('Pasig'),
+('Makati'),
+('Baguio'),
+('Other')
+ON CONFLICT (name) DO NOTHING;
