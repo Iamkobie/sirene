@@ -6,7 +6,7 @@ import { SirenaLogo, Card, Btn, Input, PasswordInput, Select } from "../componen
 
 const AGE_OPTIONS = Array.from({ length: 83 }, (_, i) => String(i + 8));
 
-export function LoginScreen() {
+export function LoginScreen({ cities }: { cities: string[] }) {
   const navigate = useNavigate();
   const [mode, setMode]                 = useState<"login" | "signup">("login");
   const [email, setEmail]               = useState("");
@@ -16,6 +16,7 @@ export function LoginScreen() {
   const [age, setAge]                   = useState("");
   const [sex, setSex]                   = useState("");
   const [motherTongue, setMotherTongue] = useState("");
+  const [city, setCity]                 = useState("");
   const [error, setError]               = useState("");
   const [loading, setLoading]           = useState(false);
 
@@ -28,12 +29,12 @@ export function LoginScreen() {
   };
 
   const handleSignup = async () => {
-    if (!username || !age || !sex || !motherTongue) { setError("Please fill in all fields."); return; }
+    if (!username || !age || !sex || !motherTongue || !city) { setError("Please fill in all fields."); return; }
     if (pw !== confirmPw) { setError("Passwords do not match."); return; }
     setError(""); setLoading(true);
     const { data, error: err } = await supabase.auth.signUp({
       email, password: pw,
-      options: { data: { username, age: Number(age), sex, mother_tongue: motherTongue } },
+      options: { data: { username, age: Number(age), sex, mother_tongue: motherTongue, city } },
     });
     setLoading(false);
     if (err) { setError(err.message); return; }
@@ -114,6 +115,7 @@ export function LoginScreen() {
                     <Select label="Sex" value={sex} onChange={setSex} options={["Male", "Female", "Non-binary", "Prefer not to say"]} />
                   </div>
                   <Select label="Mother Tongue" value={motherTongue} onChange={setMotherTongue} options={LANGUAGES} />
+                  <Select label="City" value={city} onChange={setCity} options={cities} />
                 </div>
               )}
 

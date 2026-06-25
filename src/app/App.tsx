@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Routes, Route, useNavigate, useLocation, Navigate } from "react-router";
 import { supabase } from "../lib/supabase";
 import { C, ui, NAV_ITEMS, getRank } from "./constants/theme";
@@ -16,14 +16,68 @@ import { DailyScreen } from "./pages/Daily";
 import { ProfileScreen } from "./pages/Profile";
 
 export default function App() {
-  const [xp, setXP] = useState(12000);
+  const [xp, setXP] = useState(0.0);
   const [playerName, setPlayerName] = useState("PLAYER_ONE");
+  const [user, setUser] = useState<any>(null);
+  const [challengePhrase, setChallengePhrase] = useState<any>(null);
+  const [citiesList, setCitiesList] = useState<string[]>([]);
   const [equippedBanner, setEquippedBanner] = useState<string | null>(null);
   const [equippedAvatar, setEquippedAvatar] = useState<Rank | null>(null);
   const rank = getRank(xp);
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const isLogin = pathname === "/" || pathname === "/login";
+
+  const refreshProfile = async () => {
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    if (!currentUser) return;
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", currentUser.id)
+      .single();
+    if (!error && data) {
+      setPlayerName(data.username || "PLAYER_ONE");
+      setXP(Number(data.xp) || 0.0);
+    }
+  };
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      refreshProfile();
+    } else {
+      setPlayerName("PLAYER_ONE");
+      setXP(0.0);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    supabase
+      .from("cities")
+      .select("name")
+      .order("name", { ascending: true })
+      .then(({ data, error }) => {
+        if (!error && data && data.length > 0) {
+          const names = data.map((d: any) => d.name);
+          const hasOther = names.includes("Other");
+          const filtered = names.filter((name: string) => name !== "Other");
+          if (hasOther) {
+            filtered.push("Other");
+          }
+          setCitiesList(filtered);
+        }
+      });
+  }, []);
 
   return (
     <div style={{ ...ui, background: C.bg, minHeight: "100vh", color: C.text }}>
@@ -70,13 +124,13 @@ export default function App() {
       <div style={{ position: "relative", zIndex: 1 }}>
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
-          <Route path="/login"        element={<LoginScreen />} />
+          <Route path="/login"        element={<LoginScreen cities={citiesList} />} />
           <Route path="/home"         element={<HomeScreen xp={xp} rank={rank} playerName={playerName} />} />
-          <Route path="/play"         element={<PlayScreen />} />
-          <Route path="/mission"      element={<MissionScreen />} />
-          <Route path="/recording"    element={<RecordingScreen />} />
-          <Route path="/evaluation"   element={<EvaluationScreen onXP={(n) => setXP((p) => p + n)} />} />
-          <Route path="/leaderboard"  element={<LeaderboardScreen />} />
+          <Route path="/play"         element={<PlayScreen setChallengePhrase={setChallengePhrase} onXP={(n) => setXP((p) => p + n)} />} />
+          <Route path="/mission"      element={<MissionScreen challengePhrase={challengePhrase} />} />
+          <Route path="/recording"    element={<RecordingScreen challengePhrase={challengePhrase} />} />
+          <Route path="/evaluation"   element={<EvaluationScreen challengePhrase={challengePhrase} user={user} refreshProfile={refreshProfile} />} />
+          <Route path="/leaderboard"  element={<LeaderboardScreen cities={citiesList} />} />
           <Route path="/achievements" element={<AchievementsScreen />} />
           <Route path="/daily"        element={<DailyScreen />} />
           <Route path="/profile"      element={<ProfileScreen xp={xp} rank={rank} playerName={playerName} onNameChange={setPlayerName} equippedBanner={equippedBanner} setEquippedBanner={setEquippedBanner} equippedAvatar={equippedAvatar} setEquippedAvatar={setEquippedAvatar} />} />

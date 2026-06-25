@@ -4,7 +4,7 @@ import { C, mono } from "../constants/theme";
 import type { Screen } from "../constants/theme";
 import { Btn, Page, PageHeader } from "../components/shared";
 
-export function RecordingScreen() {
+export function RecordingScreen({ challengePhrase }: { challengePhrase?: any }) {
   const navigate = useNavigate();
   const onNav = (s: Screen) => navigate(`/${s}`);
   const [phase, setPhase] = useState<"idle" | "rec" | "done">("idle");
