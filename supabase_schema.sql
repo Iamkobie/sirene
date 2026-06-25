@@ -229,7 +229,8 @@ BEGIN
         END::text AS creature_rank
     FROM public.profiles
     WHERE (p_city IS NULL OR p_city = '' OR p_city = 'Global' OR profiles.city = p_city)
-    ORDER BY profiles.xp DESC;
+    ORDER BY profiles.xp DESC
+    LIMIT 100;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
@@ -255,7 +256,8 @@ BEGIN
     JOIN public.profiles p ON lp.user_id = p.id
     WHERE lp.language = p_language
       AND (p_city IS NULL OR p_city = '' OR p_city = 'Global' OR p.city = p_city)
-    ORDER BY lp.xp DESC;
+    ORDER BY lp.xp DESC
+    LIMIT 100;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
@@ -280,7 +282,8 @@ BEGIN
     WHERE a.created_at >= NOW() - INTERVAL '7 days'
       AND (p_city IS NULL OR p_city = '' OR p_city = 'Global' OR p.city = p_city)
     GROUP BY a.user_id, p.username, p.city
-    ORDER BY weekly_xp DESC;
+    ORDER BY weekly_xp DESC
+    LIMIT 100;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
