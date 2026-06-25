@@ -1,6 +1,5 @@
-# 🌐 Sirene
-
-## A Gamified Filipino Voice Contribution & Language Learning Platform
+# 🌐 ACM Techsprint: Asteria June 2026
+## Sirene: A Gamified Filipino Voice Contribution & Language Learning Platform
 
 ------------------------------------------------------------------------
 
