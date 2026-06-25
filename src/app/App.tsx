@@ -9,6 +9,13 @@ import manananggalSvg from "../assets/ranks/manananggalrank.svg";
 import aswangSvg from "../assets/ranks/aswangrank.svg";
 import sirenaSvg from "../assets/ranks/sirenarank.svg";
 
+// Rank icon imports (for avatars)
+import nunoIcon from "../assets/ranks/icon-nuno.png";
+import tikbalangIcon from "../assets/ranks/icon-tikbalang.png";
+import manananggalIcon from "../assets/ranks/icon-manananggal.png";
+import aswangIcon from "../assets/ranks/icon-aswang.png";
+import sirenaIcon from "../assets/ranks/icon-sirena.png";
+
 type Screen = "login" | "home" | "play" | "mission" | "recording" | "evaluation" | "leaderboard" | "profile" | "achievements" | "daily";
 type Rank = "Nuno" | "Tikbalang" | "Manananggal" | "Aswang" | "Sirena";
 
@@ -18,6 +25,14 @@ const RANK_SVGS: Record<Rank, string> = {
   Manananggal: manananggalSvg,
   Aswang: aswangSvg,
   Sirena: sirenaSvg,
+};
+
+const RANK_ICONS: Record<Rank, string> = {
+  Nuno: nunoIcon,
+  Tikbalang: tikbalangIcon,
+  Manananggal: manananggalIcon,
+  Aswang: aswangIcon,
+  Sirena: sirenaIcon,
 };
 
 const RANKS: Record<Rank, { color: string; glow: string; bg: string; min: number; max: number; creature: string; tier: string }> = {
@@ -38,19 +53,19 @@ const COMING_SOON_RANKS = [
 // Profile banners unlocked at each rank — progressively more premium
 const RANK_BANNERS: Record<Rank, { name: string; gradient: string; unlocked: boolean }[]> = {
   Nuno: [
-    { name: "Earth Root", gradient: "linear-gradient(135deg, #1a0f05, #2e1a0a, #4a2c14, #6b4423, #4a2c14, #2e1a0a)", unlocked: true },
+    { name: "Earth Root", gradient: "linear-gradient(120deg, #1a0f05 0%, #2e1a0a 20%, #5c3a1a 40%, #8b5e34 50%, #cd7f32 55%, #8b5e34 60%, #5c3a1a 70%, #2e1a0a 85%, #1a0f05 100%)", unlocked: true },
   ],
   Tikbalang: [
-    { name: "Silver Mane", gradient: "linear-gradient(135deg, #1a2030, #2d3f5a, #5a7a9e, #8aaac8, #aec8de, #8aaac8, #5a7a9e, #2d3f5a, #1a2030)", unlocked: true },
+    { name: "Silver Mane", gradient: "linear-gradient(120deg, #0d1520 0%, #1a2d44 15%, #3d5a80 30%, #7a9cb8 42%, #b0c4de 48%, #e8f0f8 52%, #b0c4de 58%, #7a9cb8 68%, #3d5a80 80%, #1a2d44 92%, #0d1520 100%)", unlocked: true },
   ],
   Manananggal: [
-    { name: "Golden Wings", gradient: "linear-gradient(135deg, #1a1200, #3d2e00, #6b4e00, #a67c00, #d4a300, #ffd700, #ffe44d, #ffd700, #d4a300, #a67c00, #6b4e00, #3d2e00)", unlocked: true },
+    { name: "Golden Wings", gradient: "linear-gradient(120deg, #1a1200 0%, #3d2e00 12%, #6b4e00 24%, #a67c00 36%, #d4a300 44%, #ffd700 48%, #fff8b0 52%, #ffd700 56%, #d4a300 64%, #a67c00 74%, #6b4e00 84%, #3d2e00 92%, #1a1200 100%)", unlocked: true },
   ],
   Aswang: [
-    { name: "Platinum Ascent", gradient: "linear-gradient(135deg, #1a2a3a, #2d4a5e, #4a7a8f, #6eaab8, #8ecad6, #b0e0e8, #d4f0f4, #b0e0e8, #8ecad6, #6eaab8, #4a7a8f, #2d4a5e, #1a2a3a)", unlocked: true },
+    { name: "Platinum Ascent", gradient: "linear-gradient(120deg, #0f1a24 0%, #1a3040 12%, #2d5060 24%, #4a8090 36%, #6eaab8 44%, #8ecad6 48%, #c0e8f0 50%, #e8f8fc 52%, #c0e8f0 54%, #8ecad6 58%, #6eaab8 66%, #4a8090 76%, #2d5060 86%, #1a3040 94%, #0f1a24 100%)", unlocked: true },
   ],
   Sirena: [
-    { name: "Diamond Tide", gradient: "linear-gradient(135deg, #0a001a, #1a0044, #2e0080, #5500cc, #7733ff, #aa66ff, #cc99ff, #e0ccff, #ffffff, #e0ccff, #cc99ff, #aa66ff, #7733ff, #5500cc, #2e0080, #1a0044, #0a001a)", unlocked: true },
+    { name: "Diamond Tide", gradient: "linear-gradient(120deg, #05000d 0%, #0f0020 8%, #1a0044 16%, #330088 24%, #5500cc 32%, #7733ff 38%, #9966ff 42%, #bb99ff 46%, #ddccff 48%, #ffffff 50%, #ddccff 52%, #bb99ff 54%, #9966ff 58%, #7733ff 62%, #5500cc 68%, #330088 76%, #1a0044 84%, #0f0020 92%, #05000d 100%)", unlocked: true },
   ],
 };
 
@@ -947,16 +962,99 @@ function LeaderboardScreen() {
 // ─── Screen: Achievements ─────────────────────────────────────────────────────
 
 function AchievementsScreen() {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [achievements, setAchievements] = useState({
+    first_blood: false,
+    hot_streak: false,
+    sirena_quest: false,
+    polyglot: false,
+    speed_demon: false,
+    perfect_score: false,
+    top_rank: false,
+    book_worm: false,
+  });
+
+  useEffect(() => {
+    let active = true;
+
+    async function fetchAchievements() {
+      try {
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        if (authError || !user) {
+          if (active) {
+            navigate("/login");
+          }
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from("achievements")
+          .select("*")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (active) {
+          if (error) {
+            console.error("Error fetching achievements:", error);
+          } else if (data) {
+            setAchievements({
+              first_blood: !!data.first_blood,
+              hot_streak: !!data.hot_streak,
+              sirena_quest: !!data.sirena_quest,
+              polyglot: !!data.polyglot,
+              speed_demon: !!data.speed_demon,
+              perfect_score: !!data.perfect_score,
+              top_rank: !!data.top_rank,
+              book_worm: !!data.book_worm,
+            });
+          }
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error("Failed to load session/achievements:", err);
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    fetchAchievements();
+
+    return () => {
+      active = false;
+    };
+  }, [navigate]);
+
   const items = [
-    { icon: "🏆", title: "First Blood",   desc: "Complete your first translation", done: true,  color: C.gold },
-    { icon: "🔥", title: "Hot Streak",    desc: "Maintain a 7-day streak",         done: true,  color: C.orange },
-    { icon: "🧜‍♀️", title: "Sirena Quest",  desc: "Reach Sirena rank",               done: false, color: C.cyan },
-    { icon: "🌍", title: "Polyglot",      desc: "Start learning 5 dialects",       done: false, color: C.green },
-    { icon: "⚡", title: "Speed Demon",   desc: "100 translations in one day",     done: false, color: C.red },
-    { icon: "🎯", title: "Perfect Score", desc: "Score 100 on any evaluation",     done: true,  color: C.green },
-    { icon: "👑", title: "Top Rank",      desc: "Reach #1 on the leaderboard",     done: false, color: C.gold },
-    { icon: "📚", title: "Bookworm",      desc: "Learn 500 phrases",               done: true,  color: C.red },
+    { icon: "🏆", title: "First Blood",   desc: "Complete your first translation", done: achievements.first_blood,   color: C.gold },
+    { icon: "🔥", title: "Hot Streak",    desc: "Maintain a 7-day streak",         done: achievements.hot_streak,    color: C.orange },
+    { icon: "🧜‍♀️", title: "Sirena Quest",  desc: "Reach Sirena rank",               done: achievements.sirena_quest,  color: C.cyan },
+    { icon: "🌍", title: "Polyglot",      desc: "Start learning 5 dialects",       done: achievements.polyglot,      color: C.green },
+    { icon: "⚡", title: "Speed Demon",   desc: "100 translations in one day",     done: achievements.speed_demon,   color: C.red },
+    { icon: "🎯", title: "Perfect Score", desc: "Score 100 on any evaluation",     done: achievements.perfect_score, color: C.green },
+    { icon: "👑", title: "Top Rank",      desc: "Reach #1 on the leaderboard",     done: achievements.top_rank,      color: C.gold },
+    { icon: "📚", title: "Bookworm",      desc: "Learn 500 phrases",               done: achievements.book_worm,     color: C.red },
   ];
+
+  if (loading) {
+    return (
+      <Page>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "50vh", gap: 20 }}>
+          <div style={{
+            width: 40,
+            height: 40,
+            border: `3px solid rgba(255,26,26,0.1)`,
+            borderTop: `3px solid ${C.red}`,
+            borderRadius: "50%",
+            animation: "spin 1s linear infinite",
+            boxShadow: `0 0 10px ${C.red}33`
+          }} />
+          <span style={{ ...pixel, fontSize: 8, color: C.textMuted, letterSpacing: 1, animation: "pulse 1.5s infinite" }}>LOADING ACHIEVEMENTS...</span>
+        </div>
+      </Page>
+    );
+  }
 
   return (
     <Page>
@@ -1117,16 +1215,16 @@ function ProfileScreen({ xp, rank, playerName, onNameChange }: { xp: number; ran
       <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: 20, marginBottom: 20 }}>
         <Card style={{ padding: 0, overflow: "hidden", borderLeft: `4px solid ${cfg.color}` }} glowColor={cfg.color}>
           {/* Profile banner */}
-          <div style={{ height: 64, width: "100%", background: activeBanner ? activeBanner.gradient : `linear-gradient(135deg, #0a0a0a, ${C.surface})`, borderBottom: `1.5px solid ${cfg.color}22`, position: "relative", transition: "background 0.4s ease" }}>
-            {activeBanner && <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.2)", backdropFilter: "blur(1px)" }} />}
-            {activeBanner && <div style={{ position: "absolute", bottom: 6, right: 8, ...pixel, fontSize: 6, color: "rgba(255,255,255,0.6)", background: "rgba(0,0,0,0.5)", padding: "2px 6px", borderRadius: 4 }}>{activeBanner.name}</div>}
+          <div style={{ height: 90, width: "100%", background: activeBanner ? activeBanner.gradient : `linear-gradient(135deg, #0a0a0a, ${C.surface})`, borderBottom: `1.5px solid ${cfg.color}22`, position: "relative", transition: "all 0.4s ease" }}>
+            {activeBanner && <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.3) 100%)" }} />}
+            {activeBanner && <div style={{ position: "absolute", bottom: 8, right: 10, ...pixel, fontSize: 6, color: "rgba(255,255,255,0.7)", background: "rgba(0,0,0,0.6)", padding: "3px 8px", borderRadius: 4, backdropFilter: "blur(4px)" }}>{activeBanner.name}</div>}
           </div>
           <div style={{ padding: "20px 26px 26px" }}>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, textAlign: "center", marginTop: -36 }}>
               <div style={{ position: "relative" }}>
-                <div style={{ width: 72, height: 72, borderRadius: 18, background: `linear-gradient(135deg, #1a0808, ${C.surface})`, border: `3px solid ${avatarBorderColor}55`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 0 16px ${avatarBorderColor}44`, transition: "all 0.3s ease" }}>
+                <div style={{ width: 100, height: 100, borderRadius: 22, background: `linear-gradient(135deg, #1a0808, ${C.surface})`, border: `3px solid ${avatarBorderColor}55`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 0 16px ${avatarBorderColor}44`, transition: "all 0.3s ease", overflow: "hidden" }}>
                   {activeAvatarRank ? (
-                    <img src={RANK_SVGS[activeAvatarRank]} alt={activeAvatarRank} style={{ width: 48, height: 48, objectFit: "contain" }} />
+                    <img src={RANK_ICONS[activeAvatarRank]} alt={activeAvatarRank} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   ) : (
                     <span style={{ fontSize: 34 }}>🧑‍💻</span>
                   )}
@@ -1214,7 +1312,7 @@ function ProfileScreen({ xp, rank, playerName, onNameChange }: { xp: number; ran
           {/* None option */}
           <div
             onClick={() => setEquippedBanner(null)}
-            style={{ height: 60, borderRadius: 10, background: `linear-gradient(135deg, #0a0a0a, ${C.surface})`, border: `2px solid ${!equippedBanner ? C.red : C.border}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s", boxShadow: !equippedBanner ? `0 0 10px ${C.red}33` : "none" }}
+            style={{ height: 72, borderRadius: 12, background: `linear-gradient(135deg, #0a0a0a, ${C.surface})`, border: `2px solid ${!equippedBanner ? C.red : C.border}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s", boxShadow: !equippedBanner ? `0 0 10px ${C.red}33` : "none" }}
           >
             <span style={{ ...ui, fontSize: 11, color: C.textMuted, fontWeight: 600 }}>None</span>
           </div>
@@ -1222,11 +1320,12 @@ function ProfileScreen({ xp, rank, playerName, onNameChange }: { xp: number; ran
             <div
               key={b.name}
               onClick={() => setEquippedBanner(b.name)}
-              style={{ height: 60, borderRadius: 10, background: b.gradient, border: `2px solid ${equippedBanner === b.name ? C.red : "transparent"}`, cursor: "pointer", position: "relative", transition: "all 0.2s", boxShadow: equippedBanner === b.name ? `0 0 10px ${C.red}33` : "none", transform: equippedBanner === b.name ? "scale(1.03)" : "scale(1)" }}
+              style={{ height: 72, borderRadius: 12, background: b.gradient, border: `2px solid ${equippedBanner === b.name ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.06)"}`, cursor: "pointer", position: "relative", transition: "all 0.25s cubic-bezier(0.34,1.56,0.64,1)", boxShadow: equippedBanner === b.name ? `0 4px 20px rgba(0,0,0,0.4), inset 0 0 30px rgba(255,255,255,0.05)` : "0 2px 8px rgba(0,0,0,0.2)", transform: equippedBanner === b.name ? "scale(1.04)" : "scale(1)" }}
             >
-              <div style={{ position: "absolute", bottom: 4, left: 6, ...ui, fontSize: 8, color: "rgba(255,255,255,0.7)", fontWeight: 600 }}>{b.name}</div>
-              <div style={{ position: "absolute", top: 4, right: 6, ...pixel, fontSize: 6, color: RANKS[b.rank].color, opacity: 0.8 }}>{b.rank}</div>
-              {equippedBanner === b.name && <div style={{ position: "absolute", top: 4, left: 6, ...ui, fontSize: 8, color: C.red, fontWeight: 800 }}>✓ Equipped</div>}
+              <div style={{ position: "absolute", inset: 0, borderRadius: 10, background: "linear-gradient(180deg, rgba(255,255,255,0.06) 0%, transparent 40%, rgba(0,0,0,0.3) 100%)" }} />
+              <div style={{ position: "absolute", bottom: 6, left: 8, ...ui, fontSize: 9, color: "rgba(255,255,255,0.85)", fontWeight: 700, textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}>{b.name}</div>
+              <div style={{ position: "absolute", top: 6, right: 8, ...pixel, fontSize: 6, color: RANKS[b.rank].color, opacity: 0.9, textShadow: `0 0 6px ${RANKS[b.rank].color}66` }}>{b.rank}</div>
+              {equippedBanner === b.name && <div style={{ position: "absolute", top: 6, left: 8, ...ui, fontSize: 8, color: "#fff", fontWeight: 800, textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>✓ Equipped</div>}
             </div>
           ))}
           {/* Locked banners from higher ranks */}
@@ -1234,7 +1333,7 @@ function ProfileScreen({ xp, rank, playerName, onNameChange }: { xp: number; ran
             RANK_BANNERS[r].map((b, bi) => (
               <div
                 key={`locked-${r}-${bi}`}
-                style={{ height: 60, borderRadius: 10, background: "rgba(255,255,255,0.02)", border: `2px solid rgba(255,255,255,0.05)`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3, opacity: 0.4 }}
+                style={{ height: 72, borderRadius: 12, background: "rgba(255,255,255,0.02)", border: `2px solid rgba(255,255,255,0.05)`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3, opacity: 0.4 }}
               >
                 <span style={{ fontSize: 14 }}>🔒</span>
                 <span style={{ ...ui, fontSize: 8, color: "rgba(255,255,255,0.3)" }}>Reach {r}</span>
@@ -1245,7 +1344,7 @@ function ProfileScreen({ xp, rank, playerName, onNameChange }: { xp: number; ran
           {COMING_SOON_BANNERS.map((cs, i) => (
             <div
               key={`coming-soon-${i}`}
-              style={{ height: 60, borderRadius: 10, background: cs.gradient, border: `2px solid rgba(255,255,255,0.04)`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3, opacity: 0.3 }}
+              style={{ height: 72, borderRadius: 12, background: cs.gradient, border: `2px solid rgba(255,255,255,0.04)`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3, opacity: 0.3 }}
             >
               <span style={{ fontSize: 12 }}>🔒</span>
               <span style={{ ...ui, fontSize: 7, color: "rgba(255,255,255,0.2)" }}>Coming soon</span>
@@ -1277,8 +1376,8 @@ function ProfileScreen({ xp, rank, playerName, onNameChange }: { xp: number; ran
               onClick={() => setEquippedAvatar(r)}
               style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 8px", borderRadius: 12, cursor: "pointer", background: equippedAvatar === r ? `${RANKS[r].bg}` : "rgba(255,255,255,0.02)", border: `2px solid ${equippedAvatar === r ? RANKS[r].color : C.border}`, transition: "all 0.2s", boxShadow: equippedAvatar === r ? `0 0 12px ${RANKS[r].color}44` : "none", transform: equippedAvatar === r ? "scale(1.03)" : "scale(1)" }}
             >
-              <div style={{ width: 52, height: 52, borderRadius: 14, background: `linear-gradient(135deg, #0a0a0a, ${C.surface})`, border: `2.5px solid ${RANKS[r].color}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: RANKS[r].glow }}>
-                <img src={RANK_SVGS[r]} alt={r} style={{ width: 36, height: 36, objectFit: "contain" }} />
+              <div style={{ width: 52, height: 52, borderRadius: 14, background: `linear-gradient(135deg, #0a0a0a, ${C.surface})`, border: `2.5px solid ${RANKS[r].color}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: RANKS[r].glow, overflow: "hidden" }}>
+                <img src={RANK_ICONS[r]} alt={r} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
               </div>
               <span style={{ ...ui, fontSize: 9, color: RANKS[r].color, fontWeight: 600 }}>{r}</span>
               {equippedAvatar === r && <span style={{ ...ui, fontSize: 7, color: RANKS[r].color, fontWeight: 700 }}>Equipped</span>}
