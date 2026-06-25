@@ -485,20 +485,20 @@ function HomeScreen({ xp, rank, playerName }: { xp: number; rank: Rank; playerNa
       <Card style={{ padding: "22px 26px", marginBottom: 28, borderLeft: `4px solid ${C.red}`, position: "relative", overflow: "hidden" }} glowColor={cfg.color}>
         {/* Card shimmer accent */}
         <div style={{ position: "absolute", top: 0, right: 0, width: 200, height: "100%", background: `linear-gradient(135deg, transparent, ${cfg.color}05)`, pointerEvents: "none" }} />
-        <div style={{ display: "flex", alignItems: "center", gap: 16, position: "relative" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 16, position: "relative", flexWrap: "wrap" }}>
           <div style={{ position: "relative", flexShrink: 0 }}>
             <div style={{ width: 52, height: 52, borderRadius: 14, background: `linear-gradient(135deg, #1a0808, ${C.surface})`, border: `2px solid ${cfg.color}55`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, boxShadow: cfg.glow }}>🧑‍💻</div>
             <div style={{ position: "absolute", bottom: -5, right: -5 }}><RankBadge rank={rank} size={22} /></div>
           </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+          <div style={{ flex: 1, minWidth: 180 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6, flexWrap: "wrap" }}>
               <span style={{ ...ui, fontSize: 16, fontWeight: 900, color: C.text }}>{playerName}</span>
               <span style={{ ...pixel, fontSize: 7, color: cfg.color, background: cfg.bg, border: `1.5px solid ${cfg.color}44`, padding: "3px 8px", borderRadius: 6, boxShadow: `0 0 6px ${cfg.color}22` }}>{rank}</span>
               <span style={{ ...ui, fontSize: 12, color: C.orange, animation: "wiggle 2s ease-in-out infinite" }}>🔥 7-day streak</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <div style={{ flex: 1 }}><ProgressBar pct={pct} color={cfg.color} /></div>
-              <span style={{ ...mono, fontSize: 10, color: C.textMuted, flexShrink: 0 }}>{xp.toLocaleString()} / {cfg.max.toLocaleString()} XP · {(cfg.max - xp).toLocaleString()} to {nextRank}</span>
+              <span style={{ ...mono, fontSize: 10, color: C.textMuted, flexShrink: 0 }}>{xp.toLocaleString()} / {cfg.max.toLocaleString()} XP</span>
             </div>
           </div>
           <Btn color={C.red} onClick={() => onNav("play")} size="md">▶ Play Now</Btn>
@@ -511,7 +511,7 @@ function HomeScreen({ xp, rank, playerName }: { xp: number; rank: Rank; playerNa
           <SectionTitle>Your Languages</SectionTitle>
           <button onClick={() => onNav("play")} style={{ ...ui, fontSize: 12, color: C.red, background: "rgba(255,26,26,0.06)", border: `1.5px solid ${C.red}33`, borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontWeight: 700 }}>+ Add language</button>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14 }}>
           {langs.map((l, i) => (
             <Card key={l.name} style={{ padding: 18, animation: `slideUp 0.4s ease-out ${i * 0.1}s both`, position: "relative", overflow: "hidden" }} onClick={() => onNav("mission")} glowColor={l.color}>
               <div style={{ position: "absolute", top: 0, right: 0, width: 60, height: 60, borderRadius: "50%", background: `radial-gradient(circle, ${l.color}10, transparent)`, transform: "translate(30%, -30%)" }} />
@@ -531,7 +531,7 @@ function HomeScreen({ xp, rank, playerName }: { xp: number; rank: Rank; playerNa
 
       {/* Explore */}
       <SectionTitle style={{ marginBottom: 14 }}>Explore</SectionTitle>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14 }}>
         {[
           { label: "Daily Quest",  icon: "⚡", sub: "4 quests available",  color: C.red, screen: "daily" as Screen },
           { label: "Leaderboard",  icon: "★",  sub: "You are ranked #142", color: C.gold, screen: "leaderboard" as Screen },
@@ -586,39 +586,46 @@ function PlayScreen() {
 
   return (
     <Page maxWidth={660}>
-      <PageHeader title="New Challenge" subtitle="Choose your language, pick a phrase, then battle! ⚔️" />
+      <div style={{ marginBottom: 28 }}>
+        <h1 style={{ ...ui, fontSize: 28, fontWeight: 900, color: C.text, margin: 0 }}>New Challenge</h1>
+        <p style={{ ...ui, fontSize: 13, color: C.textMuted, margin: "6px 0 0" }}>Choose your language, pick a phrase, then battle! ⚔️</p>
+      </div>
 
-      <Card style={{ padding: 0, overflow: "hidden", marginBottom: 16, borderTop: `3px solid ${C.red}` }} glowColor={C.red}>
-        <div style={{ padding: "24px 24px 20px", borderBottom: `1.5px solid ${C.border}`, background: "rgba(255,26,26,0.04)" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+      <Card style={{ padding: 0, overflow: "hidden", marginBottom: 20, borderTop: `3px solid ${C.red}`, position: "relative" }} glowColor={C.red}>
+        {/* Retro corner accents */}
+        <div style={{ position: "absolute", top: 0, left: 0, width: 30, height: 30, borderBottom: `1px solid ${C.red}22`, borderRight: `1px solid ${C.red}22`, zIndex: 1, pointerEvents: "none" }} />
+        <div style={{ position: "absolute", top: 0, right: 0, width: 30, height: 30, borderBottom: `1px solid ${C.red}22`, borderLeft: `1px solid ${C.red}22`, zIndex: 1, pointerEvents: "none" }} />
+
+        <div style={{ padding: "24px 24px 20px", borderBottom: `1.5px solid ${C.border}`, background: "rgba(255,26,26,0.04)", position: "relative" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <div style={{ width: 8, height: 8, borderRadius: "50%", background: C.red, boxShadow: `0 0 8px ${C.red}88`, animation: "pulse 1.5s ease-in-out infinite" }} />
-              <span style={{ ...pixel, fontSize: 8, color: C.textMuted, letterSpacing: "0.08em" }}>PHRASE TO TRANSLATE</span>
+              <span style={{ ...pixel, fontSize: 8, color: C.textMuted, letterSpacing: "0.1em" }}>PHRASE TO TRANSLATE</span>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ ...mono, fontSize: 11, color: C.textMuted }}>{phraseIdx + 1}/{phrases.length}</span>
               <button onClick={() => setPhraseIdx((i) => (i + 1) % phrases.length)}
-                style={{ background: "rgba(255,26,26,0.08)", border: `1.5px solid ${C.border}`, borderRadius: 8, padding: "5px 12px", color: C.red, cursor: "pointer", fontSize: 11, fontWeight: 700, ...ui, transition: "all 0.15s" }}>Next ↻</button>
+                style={{ background: "rgba(255,26,26,0.08)", border: `1.5px solid ${C.red}33`, borderRadius: 8, padding: "6px 14px", color: C.red, cursor: "pointer", fontSize: 11, fontWeight: 700, ...ui }}>Next</button>
             </div>
           </div>
-          <p style={{ ...ui, fontSize: 22, fontWeight: 900, color: C.text, margin: 0, lineHeight: 1.4 }}>"{activePhraseText}"</p>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 14 }}>
+          <p style={{ ...ui, fontSize: 24, fontWeight: 900, color: C.text, margin: 0, lineHeight: 1.4 }}>"{activePhraseText}"</p>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 16 }}>
             <span style={{ ...ui, fontSize: 12, color: C.textMuted }}>Speak this in</span>
-            <span style={{ ...ui, fontSize: 12, fontWeight: 800, color: C.red, background: `rgba(255,26,26,0.12)`, border: `1.5px solid ${C.red}44`, borderRadius: 6, padding: "3px 10px" }}>{to}</span>
+            <span style={{ ...pixel, fontSize: 9, color: C.red, background: `rgba(255,26,26,0.12)`, border: `1.5px solid ${C.red}44`, borderRadius: 6, padding: "4px 12px" }}>{to}</span>
           </div>
         </div>
 
-        <div style={{ padding: "22px 24px 26px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 18 }}>
+        <div style={{ padding: "24px 24px 28px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 20 }}>
             <div>
-              <div style={{ ...ui, fontSize: 11, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>Source Language</div>
+              <div style={{ ...ui, fontSize: 11, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Source Language</div>
               <div style={{ position: "relative" }}>
                 <select value={from} onChange={(e) => { setFrom(e.target.value); setPhraseIdx(0); }} style={selStyle}>{sources.map((l) => <option key={l}>{l}</option>)}</select>
                 <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: C.textMuted, pointerEvents: "none", fontSize: 11 }}>▾</span>
               </div>
             </div>
             <div>
-              <div style={{ ...ui, fontSize: 11, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>Target Dialect</div>
+              <div style={{ ...ui, fontSize: 11, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Target Dialect</div>
               <div style={{ position: "relative" }}>
                 <select value={to} onChange={(e) => setTo(e.target.value)} style={selStyle}>{targets.map((l) => <option key={l}>{l}</option>)}</select>
                 <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: C.textMuted, pointerEvents: "none", fontSize: 11 }}>▾</span>
@@ -626,12 +633,12 @@ function PlayScreen() {
             </div>
           </div>
 
-          <div style={{ marginBottom: 22 }}>
-            <div style={{ ...ui, fontSize: 11, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Difficulty</div>
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ ...ui, fontSize: 11, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Difficulty</div>
             <div style={{ display: "flex", gap: 8 }}>
               {diffs.map((d) => (
                 <button key={d.label} onClick={() => setDiff(d.label)}
-                  style={{ flex: 1, padding: "10px 0", borderRadius: 10, cursor: "pointer", background: diff === d.label ? d.color : "rgba(255,255,255,0.03)", border: `2px solid ${diff === d.label ? d.color : "transparent"}`, color: diff === d.label ? "#fff" : C.textMuted, fontWeight: 800, fontSize: 12, transition: "all 0.2s cubic-bezier(0.34,1.56,0.64,1)", boxShadow: diff === d.label ? `0 4px 14px ${d.color}44` : "none", transform: diff === d.label ? "scale(1.03)" : "scale(1)", ...ui }}
+                  style={{ flex: 1, padding: "12px 0", borderRadius: 10, cursor: "pointer", background: diff === d.label ? d.color : "rgba(255,255,255,0.03)", border: `2px solid ${diff === d.label ? d.color : C.border}`, color: diff === d.label ? "#fff" : C.textMuted, fontWeight: 800, fontSize: 12, transition: "all 0.25s cubic-bezier(0.34,1.56,0.64,1)", boxShadow: diff === d.label ? `0 4px 16px ${d.color}44` : "none", transform: diff === d.label ? "scale(1.04) translateY(-2px)" : "scale(1)", ...ui }}
                 >{d.icon} {d.label}</button>
               ))}
             </div>
@@ -640,13 +647,16 @@ function PlayScreen() {
         </div>
       </Card>
 
-      <div style={{ ...pixel, fontSize: 8, color: C.textMuted, letterSpacing: "0.08em", marginBottom: 10 }}>ALL PHRASES</div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+        <div style={{ width: 3, height: 14, borderRadius: 2, background: C.red, boxShadow: `0 0 6px ${C.red}66` }} />
+        <span style={{ ...pixel, fontSize: 8, color: C.textMuted, letterSpacing: "0.1em" }}>ALL PHRASES</span>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {phrases.map((p, i) => (
           <button key={i} onClick={() => setPhraseIdx(i)}
-            style={{ ...ui, textAlign: "left", padding: "11px 14px", borderRadius: 10, border: `1.5px solid ${i === phraseIdx ? C.red + "55" : C.border}`, background: i === phraseIdx ? "rgba(255,26,26,0.06)" : "rgba(255,255,255,0.01)", cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: 12, transform: i === phraseIdx ? "scale(1.01)" : "scale(1)" }}
+            style={{ ...ui, textAlign: "left", padding: "12px 16px", borderRadius: 10, border: `1.5px solid ${i === phraseIdx ? C.red + "55" : C.border}`, background: i === phraseIdx ? "rgba(255,26,26,0.06)" : "rgba(255,255,255,0.01)", cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: 12, transform: i === phraseIdx ? "scale(1.01)" : "scale(1)" }}
           >
-            <span style={{ ...mono, fontSize: 10, color: i === phraseIdx ? C.red : C.textMuted, width: 16, flexShrink: 0 }}>{i + 1}</span>
+            <span style={{ ...mono, fontSize: 10, color: i === phraseIdx ? C.red : C.textMuted, width: 18, flexShrink: 0 }}>{String(i + 1).padStart(2, "0")}</span>
             <span style={{ ...ui, fontSize: 13, color: i === phraseIdx ? C.text : C.textMuted, fontWeight: i === phraseIdx ? 700 : 400 }}>{p}</span>
             {i === phraseIdx && <span style={{ marginLeft: "auto", fontSize: 11, color: C.red, fontWeight: 700 }}>●</span>}
           </button>
@@ -916,43 +926,56 @@ function LeaderboardScreen() {
 
   return (
     <Page maxWidth={700}>
-      <PageHeader title="★ Leaderboard" subtitle={subtitle} />
+      <div style={{ marginBottom: 28 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+          <h1 style={{ ...ui, fontSize: 28, fontWeight: 900, color: C.text, margin: 0 }}>★ Leaderboard</h1>
+        </div>
+        <p style={{ ...ui, fontSize: 13, color: C.textMuted, margin: 0 }}>{subtitle}</p>
+      </div>
 
       {/* Podium — top 3 */}
       {players.length >= 3 && (
-        <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-end", gap: 12, marginBottom: 28 }}>
-          {[players[1], players[0], players[2]].map((p, i) => {
-            const orderIdx = [1, 0, 2];
-            const heights = [115, 145, 92];
-            const ri = orderIdx[i];
-            return (
-              <div key={p.name} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5, flex: 1, maxWidth: 130 }}>
-                <span style={{ fontSize: 20, animation: "bounce 2s ease-in-out infinite", animationDelay: `${ri * 0.2}s` }}>{medals[ri]}</span>
-                <div style={{ width: 42, height: 42, borderRadius: 12, background: "rgba(255,26,26,0.05)", border: `2px solid ${RANKS[p.rank].color}55`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, boxShadow: RANKS[p.rank].glow }}>{p.avatar}</div>
-                <span style={{ ...ui, fontSize: 10, fontWeight: 800, color: C.text, textAlign: "center" }}>{p.name}</span>
-                <div style={{ width: "100%", height: heights[i], borderRadius: "12px 12px 0 0", background: `linear-gradient(180deg, ${RANKS[p.rank].color}20, ${RANKS[p.rank].color}05)`, border: `1.5px solid ${RANKS[p.rank].color}33`, borderBottom: "none", display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: 10 }}>
-                  <span style={{ ...mono, fontSize: 11, color: RANKS[p.rank].color, fontWeight: 700 }}>{(p.xp / 1000).toFixed(1)}k</span>
+        <Card style={{ padding: "24px 20px 0", marginBottom: 24, position: "relative", overflow: "hidden" }} glowColor={C.gold}>
+          {/* Retro corner brackets */}
+          <div style={{ position: "absolute", top: 10, left: 10, width: 20, height: 20, borderTop: `2px solid ${C.gold}33`, borderLeft: `2px solid ${C.gold}33`, borderRadius: "4px 0 0 0" }} />
+          <div style={{ position: "absolute", top: 10, right: 10, width: 20, height: 20, borderTop: `2px solid ${C.gold}33`, borderRight: `2px solid ${C.gold}33`, borderRadius: "0 4px 0 0" }} />
+          <div style={{ ...pixel, fontSize: 7, color: C.gold, letterSpacing: "0.1em", textAlign: "center", marginBottom: 16, opacity: 0.7 }}>TOP PLAYERS</div>
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-end", gap: 14 }}>
+            {[players[1], players[0], players[2]].map((p, i) => {
+              const orderIdx = [1, 0, 2];
+              const heights = [110, 140, 88];
+              const sizes = [44, 52, 40];
+              const ri = orderIdx[i];
+              return (
+                <div key={p.name} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flex: 1, maxWidth: 140, animation: `slideUp 0.4s ease-out ${ri * 0.1}s both` }}>
+                  <span style={{ fontSize: ri === 0 ? 26 : 20, animation: "bounce 2s ease-in-out infinite", animationDelay: `${ri * 0.2}s` }}>{medals[ri]}</span>
+                  <div style={{ width: sizes[i], height: sizes[i], borderRadius: 14, background: "rgba(255,26,26,0.05)", border: `2.5px solid ${RANKS[p.rank].color}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: sizes[i] * 0.45, boxShadow: `0 0 12px ${RANKS[p.rank].color}33` }}>{p.avatar}</div>
+                  <span style={{ ...ui, fontSize: 10, fontWeight: 800, color: C.text, textAlign: "center" }}>{p.name}</span>
+                  <div style={{ width: "100%", height: heights[i], borderRadius: "14px 14px 0 0", background: `linear-gradient(180deg, ${RANKS[p.rank].color}22, ${RANKS[p.rank].color}08)`, border: `1.5px solid ${RANKS[p.rank].color}33`, borderBottom: "none", display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 12, gap: 4 }}>
+                    <span style={{ ...mono, fontSize: 13, color: RANKS[p.rank].color, fontWeight: 800 }}>{(p.xp / 1000).toFixed(1)}k</span>
+                    <span style={{ ...ui, fontSize: 9, color: C.textMuted }}>XP</span>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        </Card>
       )}
 
-      {/* Tab bar: Global | Language | Weekly */}
-      <div style={{ display: "flex", background: "rgba(255,26,26,0.05)", border: `2px solid ${C.border}`, borderRadius: 14, padding: 4, marginBottom: 16 }}>
+      {/* Tab bar */}
+      <div style={{ display: "flex", background: "rgba(255,26,26,0.04)", border: `2px solid ${C.border}`, borderRadius: 14, padding: 4, marginBottom: 16 }}>
         {([
           { key: "global" as MainTab, label: "🌏 Global" },
           { key: "language" as MainTab, label: "🗣️ Language" },
           { key: "weekly" as MainTab, label: "📅 Weekly" },
         ]).map((t) => (
           <button key={t.key} onClick={() => setMainTab(t.key)}
-            style={{ flex: 1, padding: "10px", borderRadius: 10, border: "none", cursor: "pointer", background: mainTab === t.key ? C.red : "transparent", color: mainTab === t.key ? "#fff" : C.textMuted, fontWeight: 800, fontSize: 13, transition: "all 0.25s cubic-bezier(0.34,1.56,0.64,1)", boxShadow: mainTab === t.key ? `0 0 14px ${C.red}55` : "none", transform: mainTab === t.key ? "scale(1.02)" : "scale(1)", ...ui }}
+            style={{ flex: 1, padding: "11px", borderRadius: 10, border: "none", cursor: "pointer", background: mainTab === t.key ? C.red : "transparent", color: mainTab === t.key ? "#fff" : C.textMuted, fontWeight: 800, fontSize: 13, transition: "all 0.25s cubic-bezier(0.34,1.56,0.64,1)", boxShadow: mainTab === t.key ? `0 2px 14px ${C.red}55` : "none", transform: mainTab === t.key ? "scale(1.02)" : "scale(1)", ...ui }}
           >{t.label}</button>
         ))}
       </div>
 
-      {/* Language dropdown — only shown when Language tab is active */}
+      {/* Language dropdown */}
       {mainTab === "language" && (
         <div style={{ marginBottom: 14 }}>
           <div style={{ position: "relative", width: 220 }}>
@@ -968,20 +991,23 @@ function LeaderboardScreen() {
       {/* Player list */}
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {players.map((p, i) => (
-          <Card key={p.name + mainTab + (mainTab === "language" ? selectedLang : "")} style={{ padding: "11px 14px", display: "flex", alignItems: "center", gap: 12, ...(p.me ? { border: `1.5px solid ${C.red}44`, background: "rgba(255,26,26,0.04)" } : {}) }} glowColor={p.me ? C.red : undefined}>
-            <div style={{ width: 22, textAlign: "center", flexShrink: 0 }}>
-              {i < 3 ? <span style={{ fontSize: 16 }}>{medals[i]}</span> : <span style={{ ...mono, fontSize: 11, color: C.textMuted }}>{i + 1}</span>}
+          <Card key={p.name + mainTab + (mainTab === "language" ? selectedLang : "")} style={{ padding: "12px 16px", display: "flex", alignItems: "center", gap: 12, animation: `slideUp 0.3s ease-out ${i * 0.03}s both`, ...(p.me ? { border: `1.5px solid ${C.red}44`, background: "rgba(255,26,26,0.04)" } : {}) }} glowColor={p.me ? C.red : undefined}>
+            <div style={{ width: 24, textAlign: "center", flexShrink: 0 }}>
+              {i < 3 ? <span style={{ fontSize: 16 }}>{medals[i]}</span> : <span style={{ ...mono, fontSize: 12, color: C.textMuted, fontWeight: 700 }}>#{i + 1}</span>}
             </div>
-            <div style={{ width: 36, height: 36, borderRadius: 9, background: "rgba(255,26,26,0.04)", border: `1.5px solid ${RANKS[p.rank].color}33`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>{p.avatar}</div>
+            <div style={{ width: 38, height: 38, borderRadius: 10, background: "rgba(255,26,26,0.04)", border: `1.5px solid ${RANKS[p.rank].color}33`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, flexShrink: 0 }}>{p.avatar}</div>
             <div style={{ flex: 1 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ ...ui, fontSize: 12, fontWeight: 800, color: p.me ? C.redLight : C.text }}>{p.name}</span>
+                <span style={{ ...ui, fontSize: 13, fontWeight: 800, color: p.me ? C.redLight : C.text }}>{p.name}</span>
                 <span style={{ fontSize: 11 }}>{p.flag}</span>
-                {p.me && <span style={{ ...pixel, fontSize: 6, color: "#fff", background: C.red, padding: "2px 6px", borderRadius: 4 }}>YOU</span>}
+                {p.me && <span style={{ ...pixel, fontSize: 6, color: "#fff", background: C.red, padding: "2px 7px", borderRadius: 4, boxShadow: `0 0 6px ${C.red}44` }}>YOU</span>}
               </div>
-              <span style={{ ...ui, fontSize: 11, color: C.textMuted }}>{p.xp.toLocaleString()} XP · {p.streak}🔥</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2 }}>
+                <span style={{ ...mono, fontSize: 11, color: C.textMuted }}>{p.xp.toLocaleString()} XP</span>
+                <span style={{ ...ui, fontSize: 10, color: C.orange }}>{p.streak}🔥</span>
+              </div>
             </div>
-            <RankBadge rank={p.rank} size={26} />
+            <RankBadge rank={p.rank} size={28} />
           </Card>
         ))}
       </div>
@@ -1088,7 +1114,16 @@ function AchievementsScreen() {
 
   return (
     <Page>
-      <PageHeader title="🏆 Achievements" subtitle={`${items.filter((a) => a.done).length} of ${items.length} unlocked — keep going!`} />
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 28 }}>
+        <div>
+          <h1 style={{ ...ui, fontSize: 28, fontWeight: 900, color: C.text, margin: 0 }}>🏆 Achievements</h1>
+          <p style={{ ...ui, fontSize: 13, color: C.textMuted, margin: "6px 0 0" }}>{items.filter((a) => a.done).length} of {items.length} unlocked — keep going!</p>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ width: 120 }}><ProgressBar pct={(items.filter((a) => a.done).length / items.length) * 100} color={C.gold} height={8} /></div>
+          <span style={{ ...mono, fontSize: 12, color: C.gold, fontWeight: 700 }}>{Math.round((items.filter((a) => a.done).length / items.length) * 100)}%</span>
+        </div>
+      </div>
 
       <Card style={{ padding: "28px 20px", marginBottom: 24, borderTop: `3px solid ${C.red}` }} glowColor={C.red}>
         <div style={{ ...pixel, fontSize: 9, color: C.text, marginBottom: 24, letterSpacing: "0.05em" }}>MYTHICAL RANK PATH</div>
@@ -1134,13 +1169,18 @@ function AchievementsScreen() {
         <div style={{ ...ui, fontSize: 11, color: "rgba(255,255,255,0.25)", textAlign: "center", marginTop: 18, fontStyle: "italic" }}>More mythical ranks coming soon…</div>
       </Card>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14 }}>
         {items.map((a, i) => (
-          <Card key={a.title} style={{ padding: 18, opacity: a.done ? 1 : 0.4, animation: `slideUp 0.3s ease-out ${i * 0.05}s both` }} glowColor={a.done ? a.color : undefined}>
-            <div style={{ fontSize: 28, marginBottom: 8, animation: a.done ? "bounce 3s ease-in-out infinite" : "none", animationDelay: `${i * 0.5}s` }}>{a.icon}</div>
-            <div style={{ ...ui, fontSize: 12, fontWeight: 800, color: a.done ? a.color : C.textMuted, marginBottom: 3 }}>{a.title}</div>
-            <p style={{ ...ui, fontSize: 11, color: C.textMuted, lineHeight: 1.4, margin: 0 }}>{a.desc}</p>
-            {a.done && <div style={{ ...ui, fontSize: 10, color: C.green, fontWeight: 700, marginTop: 8 }}>✓ Unlocked</div>}
+          <Card key={a.title} style={{ padding: 20, opacity: a.done ? 1 : 0.5, animation: `slideUp 0.4s ease-out ${i * 0.06}s both`, position: "relative", overflow: "hidden" }} glowColor={a.done ? a.color : undefined}>
+            {a.done && <div style={{ position: "absolute", top: -15, right: -15, width: 50, height: 50, borderRadius: "50%", background: `radial-gradient(circle, ${a.color}15, transparent)` }} />}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+              <div style={{ fontSize: 30, animation: a.done ? "bounce 3s ease-in-out infinite" : "none", animationDelay: `${i * 0.4}s` }}>{a.icon}</div>
+              {a.done && <div style={{ ...ui, fontSize: 9, color: C.green, fontWeight: 700, background: "rgba(76,175,125,0.1)", border: "1px solid rgba(76,175,125,0.2)", padding: "3px 8px", borderRadius: 6 }}>✓ Done</div>}
+              {!a.done && <div style={{ ...ui, fontSize: 9, color: C.textMuted, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", padding: "3px 8px", borderRadius: 6 }}>🔒</div>}
+            </div>
+            <div style={{ ...ui, fontSize: 13, fontWeight: 800, color: a.done ? C.text : C.textMuted, marginBottom: 4 }}>{a.title}</div>
+            <p style={{ ...ui, fontSize: 11, color: C.textMuted, lineHeight: 1.5, margin: 0 }}>{a.desc}</p>
+            {a.done && <div style={{ marginTop: 10, height: 3, borderRadius: 2, background: `linear-gradient(90deg, ${a.color}, ${a.color}55)`, boxShadow: `0 0 8px ${a.color}33` }} />}
           </Card>
         ))}
       </div>
@@ -1160,34 +1200,72 @@ function DailyScreen() {
     { title: "Community Share",    desc: "Contribute 5 voice recordings",      xp: 75,  color: C.gold, icon: "🤝", done: false },
   ];
 
+  // Timer that counts down to next 8:00 AM
+  const [timeLeft, setTimeLeft] = useState("");
+  useEffect(() => {
+    function calcTimeLeft() {
+      const now = new Date();
+      const next8am = new Date(now);
+      next8am.setHours(8, 0, 0, 0);
+      if (now >= next8am) next8am.setDate(next8am.getDate() + 1);
+      const diff = next8am.getTime() - now.getTime();
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+    }
+    setTimeLeft(calcTimeLeft());
+    const interval = setInterval(() => setTimeLeft(calcTimeLeft()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const doneCount = quests.filter((q) => q.done).length;
+
   return (
     <Page maxWidth={700}>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 16, alignItems: "start", marginBottom: 28 }}>
-        <PageHeader title="⚡ Daily Quests" subtitle="Complete all 4 for a bonus XP reward!" />
-        <Card style={{ padding: "14px 20px", textAlign: "center", borderTop: `3px solid ${C.red}` }} glowColor={C.red}>
-          <div style={{ ...pixel, fontSize: 7, color: C.textMuted, marginBottom: 4, letterSpacing: "0.1em" }}>RESETS IN</div>
-          <div style={{ ...mono, fontSize: 20, color: C.red, fontWeight: 700, letterSpacing: 3, textShadow: `0 0 12px ${C.red}55` }}>14:23:07</div>
-          <div style={{ display: "flex", gap: 4, justifyContent: "center", marginTop: 8 }}>
-            {quests.map((q, i) => <div key={i} style={{ width: 20, height: 5, borderRadius: 3, background: q.done ? C.red : "rgba(255,255,255,0.06)", boxShadow: q.done ? `0 0 6px ${C.red}66` : "none", transition: "all 0.3s" }} />)}
-          </div>
-          <div style={{ ...ui, fontSize: 10, color: C.textMuted, marginTop: 4, fontWeight: 700 }}>{quests.filter((q) => q.done).length}/{quests.length}</div>
+      {/* Header with timer */}
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 28 }}>
+        <div>
+          <h1 style={{ ...ui, fontSize: 28, fontWeight: 900, color: C.text, margin: 0 }}>⚡ Daily Quests</h1>
+          <p style={{ ...ui, fontSize: 13, color: C.textMuted, margin: "6px 0 0" }}>Complete all 4 for a bonus XP reward!</p>
+        </div>
+        <Card style={{ padding: "16px 22px", textAlign: "center", position: "relative", overflow: "hidden" }} glowColor={C.red}>
+          {/* Retro corner accents */}
+          <div style={{ position: "absolute", top: 6, left: 6, width: 12, height: 12, borderTop: `1.5px solid ${C.red}44`, borderLeft: `1.5px solid ${C.red}44`, borderRadius: "3px 0 0 0" }} />
+          <div style={{ position: "absolute", top: 6, right: 6, width: 12, height: 12, borderTop: `1.5px solid ${C.red}44`, borderRight: `1.5px solid ${C.red}44`, borderRadius: "0 3px 0 0" }} />
+          <div style={{ ...pixel, fontSize: 7, color: C.textMuted, marginBottom: 6, letterSpacing: "0.12em" }}>RESETS IN</div>
+          <div style={{ ...mono, fontSize: 22, color: C.red, fontWeight: 700, letterSpacing: 3, textShadow: `0 0 14px ${C.red}55` }}>{timeLeft}</div>
         </Card>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      {/* Progress summary */}
+      <Card style={{ padding: "16px 22px", marginBottom: 20, display: "flex", alignItems: "center", gap: 16 }} glowColor={doneCount === quests.length ? C.green : C.red}>
+        <div style={{ display: "flex", gap: 5 }}>
+          {quests.map((q, i) => <div key={i} style={{ width: 28, height: 6, borderRadius: 3, background: q.done ? C.green : "rgba(255,255,255,0.06)", boxShadow: q.done ? `0 0 6px ${C.green}66` : "none", transition: "all 0.3s" }} />)}
+        </div>
+        <span style={{ ...mono, fontSize: 12, color: doneCount === quests.length ? C.green : C.textMuted, fontWeight: 700 }}>{doneCount}/{quests.length}</span>
+        <div style={{ flex: 1 }} />
+        {doneCount === quests.length && <span style={{ ...pixel, fontSize: 8, color: C.green, animation: "pulse 1.5s infinite" }}>ALL COMPLETE!</span>}
+        {doneCount < quests.length && <span style={{ ...ui, fontSize: 11, color: C.textMuted }}>{quests.length - doneCount} remaining</span>}
+      </Card>
+
+      {/* Quest list */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {quests.map((q, i) => (
-          <Card key={q.title} style={{ padding: 18, animation: `slideUp 0.3s ease-out ${i * 0.1}s both` }} glowColor={q.done ? C.green : q.color}>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
-              <div style={{ width: 44, height: 44, borderRadius: 12, background: `${q.color}15`, border: `1.5px solid ${q.color}33`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0, animation: q.done ? "none" : "bounce 3s ease-in-out infinite", animationDelay: `${i * 0.5}s` }}>{q.icon}</div>
+          <Card key={q.title} style={{ padding: 20, animation: `slideUp 0.4s ease-out ${i * 0.08}s both`, position: "relative", overflow: "hidden", borderLeft: q.done ? `4px solid ${C.green}` : `4px solid ${q.color}33` }} glowColor={q.done ? C.green : q.color}>
+            {/* Subtle accent glow */}
+            {!q.done && <div style={{ position: "absolute", top: -20, right: -20, width: 60, height: 60, borderRadius: "50%", background: `radial-gradient(circle, ${q.color}0a, transparent)` }} />}
+            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+              <div style={{ width: 48, height: 48, borderRadius: 14, background: q.done ? "rgba(76,175,125,0.1)" : `${q.color}12`, border: `2px solid ${q.done ? C.green + "44" : q.color + "44"}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0, transition: "all 0.3s" }}>{q.icon}</div>
               <div style={{ flex: 1 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
-                  <span style={{ ...ui, fontSize: 14, fontWeight: 800, color: q.done ? C.textMuted : C.text }}>{q.title}</span>
-                  {q.done && <span style={{ ...ui, fontSize: 10, fontWeight: 700, color: C.green, background: `rgba(76,175,125,0.12)`, border: `1.5px solid rgba(76,175,125,0.25)`, padding: "2px 8px", borderRadius: 50 }}>Done ✓</span>}
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                  <span style={{ ...ui, fontSize: 15, fontWeight: 800, color: q.done ? C.textMuted : C.text, textDecoration: q.done ? "line-through" : "none" }}>{q.title}</span>
+                  {q.done && <span style={{ ...ui, fontSize: 10, fontWeight: 700, color: C.green, background: "rgba(76,175,125,0.12)", border: "1px solid rgba(76,175,125,0.25)", padding: "3px 10px", borderRadius: 50 }}>✓ Complete</span>}
                 </div>
-                <p style={{ ...ui, fontSize: 12, color: C.textMuted, margin: 0 }}>{q.desc}</p>
+                <p style={{ ...ui, fontSize: 12, color: C.textMuted, margin: 0, lineHeight: 1.4 }}>{q.desc}</p>
               </div>
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
-                <span style={{ ...mono, fontSize: 12, fontWeight: 800, color: C.gold }}>+{q.xp} XP</span>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, flexShrink: 0 }}>
+                <span style={{ ...mono, fontSize: 13, fontWeight: 800, color: C.gold, textShadow: `0 0 8px ${C.gold}33` }}>+{q.xp} XP</span>
                 {!q.done && <Btn color={q.color} size="sm" onClick={() => onNav("mission")}>Start →</Btn>}
               </div>
             </div>
@@ -1253,8 +1331,8 @@ function ProfileScreen({ xp, rank, playerName, onNameChange, equippedBanner, set
           {/* Banner name tag */}
           {activeBanner && <div style={{ position: "absolute", bottom: 12, right: 14, ...pixel, fontSize: 7, color: "rgba(255,255,255,0.7)", background: "rgba(0,0,0,0.6)", padding: "4px 12px", borderRadius: 6, backdropFilter: "blur(6px)", border: "1px solid rgba(255,255,255,0.1)" }}>{activeBanner.name}</div>}
         </div>
-        <div style={{ padding: "20px 36px 36px" }}>
-          <div style={{ display: "flex", gap: 24 }}>
+        <div style={{ padding: "20px 24px 36px" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 20 }}>
             <div style={{ position: "relative", flexShrink: 0, marginTop: -70 }}>
               <div style={{ width: 110, height: 110, borderRadius: 22, background: `linear-gradient(135deg, #0a0a0a, ${C.surface})`, border: `4px solid ${avatarBorderColor}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 0 24px ${avatarBorderColor}55, 0 8px 32px rgba(0,0,0,0.5)`, overflow: "hidden" }}>
                 {activeAvatarRank ? (<img src={RANK_ICONS[activeAvatarRank]} alt={activeAvatarRank} style={{ width: "100%", height: "100%", objectFit: "cover" }} />) : (<span style={{ fontSize: 44 }}>🧑‍💻</span>)}
@@ -1283,7 +1361,7 @@ function ProfileScreen({ xp, rank, playerName, onNameChange, equippedBanner, set
       </Card>
 
       {/* Stats grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 24 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 14, marginBottom: 24 }}>
         {stats.map((s, i) => (
           <Card key={s.label} style={{ padding: "22px 22px", animation: `slideUp 0.4s ease-out ${i * 0.08}s both`, position: "relative", overflow: "hidden" }} glowColor={s.color}>
             <div style={{ position: "absolute", top: -10, right: -10, width: 50, height: 50, borderRadius: "50%", background: `radial-gradient(circle, ${s.color}12, transparent)` }} />
@@ -1301,7 +1379,7 @@ function ProfileScreen({ xp, rank, playerName, onNameChange, equippedBanner, set
       {/* Badges */}
       <Card style={{ padding: 22 }} glowColor={C.red}>
         <div style={{ ...ui, fontSize: 14, fontWeight: 800, color: C.text, marginBottom: 14 }}>🛡️ Badges</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(80px, 1fr))", gap: 10 }}>
           {badges.map((b, i) => (
             <div key={b.label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "16px 8px", borderRadius: 12, background: b.earned ? "rgba(255,26,26,0.04)" : "rgba(255,255,255,0.02)", opacity: b.earned ? 1 : 0.3, border: b.earned ? `1.5px solid ${C.red}22` : "1.5px solid transparent" }}>
               <span style={{ fontSize: 26, animation: b.earned ? "bounce 3s ease-in-out infinite" : "none", animationDelay: `${i * 0.3}s` }}>{b.icon}</span>
@@ -1403,6 +1481,20 @@ export default function App() {
         <div style={{ position: "absolute", inset: 0, opacity: 0.015, backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")" }} />
       </div>
       {!isLogin && <Navbar xp={xp} rank={rank} playerName={playerName} onLogout={async () => { await supabase.auth.signOut(); navigate("/login"); }} />}
+      {/* Mobile bottom nav */}
+      {!isLogin && (
+        <nav style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 100, display: "none", background: "rgba(10,10,10,0.96)", backdropFilter: "blur(20px)", borderTop: `1.5px solid ${C.border}`, padding: "8px 12px 12px", justifyContent: "space-around" }}>
+          {NAV_ITEMS.slice(0, 5).map(({ label, icon, screen: s }) => {
+            const active = (pathname.replace("/", "") || "home") === s;
+            return (
+              <button key={s} onClick={() => navigate(`/${s}`)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, background: "none", border: "none", cursor: "pointer", color: active ? C.red : C.textMuted, padding: "4px 8px", borderRadius: 8, transition: "all 0.2s" }}>
+                <span style={{ fontSize: 16 }}>{icon}</span>
+                <span style={{ ...ui, fontSize: 9, fontWeight: 700 }}>{label}</span>
+              </button>
+            );
+          })}
+        </nav>
+      )}
       <div style={{ position: "relative", zIndex: 1 }}>
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
@@ -1427,6 +1519,8 @@ export default function App() {
         button:hover { filter: brightness(1.1); }
         button:active { transform: scale(0.97); }
         img { transition: transform 0.3s ease; }
+        a { color: ${C.red}; text-decoration: none; }
+        ::selection { background: ${C.red}44; color: #fff; }
         @keyframes coinFly { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-160px) scale(1.4); opacity: 0; } }
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
         @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.9; transform: scale(1.03); } }
@@ -1438,6 +1532,18 @@ export default function App() {
         @keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
         @keyframes glow { 0%, 100% { box-shadow: 0 0 5px rgba(255,26,26,0.2); } 50% { box-shadow: 0 0 20px rgba(255,26,26,0.4); } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+          header { padding: 8px 14px !important; }
+          header nav { display: none !important; }
+          nav[style*="position: fixed"][style*="bottom: 0"] { display: flex !important; }
+          main > div { padding: 20px 14px 80px !important; }
+        }
+        @media (min-width: 769px) {
+          nav[style*="position: fixed"][style*="bottom: 0"] { display: none !important; }
+        }
       `}</style>
     </div>
   );
