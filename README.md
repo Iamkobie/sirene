@@ -11,7 +11,7 @@
 **Members:** 
 - Calingasan, Kobie - Backend Developer (Team Representative)
 - Calinawan, Russell - Frontend Developer
-- Ulgasan, Xeroj - AI Engineer
+- Ulgasan, Xeroj - Backend Developer
 - Agustin, Ernesto - Frontend Developer
 
 ------------------------------------------------------------------------
