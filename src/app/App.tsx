@@ -91,6 +91,8 @@ export default function App() {
         button:hover { filter: brightness(1.1); }
         button:active { transform: scale(0.97); }
         img { transition: transform 0.3s ease; }
+        .sirene-card:hover { background: ${C.surfaceHover} !important; border-color: ${C.borderHover} !important; box-shadow: 0 0 20px rgba(255,26,26,0.08), 0 8px 24px rgba(0,0,0,0.4) !important; transform: translateY(-2px); }
+        .sirene-card[style*="cursor: pointer"]:hover { transform: translateY(-3px) scale(1.005); }
         a { color: ${C.red}; text-decoration: none; }
         ::selection { background: ${C.red}44; color: #fff; }
         @keyframes coinFly { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-160px) scale(1.4); opacity: 0; } }

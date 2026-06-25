@@ -54,18 +54,17 @@ export function ProgressBar({ pct, color, height = 7 }: { pct: number; color: st
 }
 
 export function Card({ children, style = {}, onClick, glowColor }: { children: React.ReactNode; style?: React.CSSProperties; onClick?: () => void; glowColor?: string }) {
-  const [hovered, setHovered] = useState(false);
   const gc = glowColor || C.red;
   return (
-    <div onClick={onClick} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
+    <div onClick={onClick} className="sirene-card"
       style={{
-        background: hovered ? C.surfaceHover : C.surface,
-        border: `1.5px solid ${hovered ? C.borderHover : C.border}`,
+        background: C.surface,
+        border: `1.5px solid ${C.border}`,
         borderRadius: 16,
-        boxShadow: hovered ? `0 0 20px ${gc}15, 0 8px 24px rgba(0,0,0,0.4)` : "0 2px 8px rgba(0,0,0,0.2)",
-        transform: hovered && onClick ? "translateY(-3px) scale(1.008)" : "translateY(0) scale(1)",
-        transition: "all 0.3s cubic-bezier(0.34,1.56,0.64,1)",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+        transition: "all 0.25s ease",
         cursor: onClick ? "pointer" : "default",
+        ["--glow-color" as string]: `${gc}15`,
         ...style,
       }}
     >{children}</div>
@@ -130,17 +129,19 @@ export function PasswordInput({ label, value, onChange, placeholder }: { label?:
 
 export function Select({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: string[] }) {
   const [focused, setFocused] = useState(false);
+  const [hovered, setHovered] = useState(false);
   return (
     <div>
       <div style={{ ...ui, fontSize: 11, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6 }}>{label}</div>
-      <div style={{ position: "relative" }}>
+      <div style={{ position: "relative" }}
+        onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
         <select value={value} onChange={(e) => onChange(e.target.value)}
           onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
-          style={{ ...ui, width: "100%", background: "rgba(255,26,26,0.03)", border: `2px solid ${focused ? C.red + "77" : C.border}`, borderRadius: 12, padding: "12px 36px 12px 16px", color: value ? C.text : C.textMuted, fontSize: 14, outline: "none", cursor: "pointer", appearance: "none", boxSizing: "border-box", boxShadow: focused ? `0 0 16px ${C.red}33` : "none", transition: "all 0.2s ease" }}>
+          style={{ ...ui, width: "100%", background: focused ? "rgba(255,26,26,0.05)" : "rgba(255,26,26,0.03)", border: `2px solid ${focused ? C.red + "77" : hovered ? C.red + "44" : C.border}`, borderRadius: 12, padding: "12px 36px 12px 16px", color: value ? C.text : C.textMuted, fontSize: 14, outline: "none", cursor: "pointer", appearance: "none", boxSizing: "border-box", boxShadow: focused ? `0 0 20px ${C.red}33, inset 0 0 8px ${C.red}08` : "none", transition: "all 0.3s ease", transform: focused ? "scale(1.01)" : "scale(1)" }}>
           <option value="">Select…</option>
           {options.map((o) => <option key={o} value={o}>{o}</option>)}
         </select>
-        <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: C.textMuted, pointerEvents: "none", fontSize: 11 }}>▾</span>
+        <span style={{ position: "absolute", right: 12, top: "50%", transform: `translateY(-50%) rotate(${focused ? "180deg" : "0deg"})`, color: focused ? C.red : C.textMuted, pointerEvents: "none", fontSize: 11, transition: "all 0.3s ease" }}>▾</span>
       </div>
     </div>
   );
