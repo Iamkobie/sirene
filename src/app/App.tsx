@@ -25,16 +25,16 @@ function getRank(xp: number): Rank {
 const C = {
   bg: "#0a0a0a",
   surface: "#131313",
-  surfaceHover: "#1e1212",
-  border: "rgba(255,26,26,0.18)",
-  borderHover: "rgba(255,26,26,0.45)",
-  borderStrong: "rgba(255,26,26,0.6)",
+  surfaceHover: "#1c1414",
+  border: "rgba(255,26,26,0.12)",
+  borderHover: "rgba(255,26,26,0.25)",
+  borderStrong: "rgba(255,26,26,0.4)",
   text: "#f5eded",
   textMuted: "#9e7070",
   red: "#ff1a1a",
   redLight: "#ff5252",
   redDark: "#cc0000",
-  redGlow: "0 0 20px rgba(255,26,26,0.4)",
+  redGlow: "0 0 12px rgba(255,26,26,0.2)",
   gold: "#ffd700",
   green: "#4caf7d",
   cyan: "#4fc3f7",
@@ -44,6 +44,37 @@ const C = {
 const ui: React.CSSProperties = { fontFamily: "'Inter', sans-serif" };
 const mono: React.CSSProperties = { fontFamily: "'Space Mono', monospace" };
 const pixel: React.CSSProperties = { fontFamily: "'Press Start 2P', monospace" };
+
+// ─── Mermaid / Sirena Logo SVG ────────────────────────────────────────────────
+function SirenaLogo({ size = 32 }: { size?: number }) {
+  // Clean iconic mermaid tail mark — abstract S-curve with a fin
+  return (
+    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* Main S-curve tail shape */}
+      <path
+        d="M20 4 C12 4, 8 10, 8 14 C8 18, 12 20, 16 20 C20 20, 24 18, 28 20 C32 22, 32 28, 28 32 C26 34, 22 36, 20 36"
+        stroke="url(#logoGrad)" strokeWidth="4" strokeLinecap="round" fill="none"
+      />
+      {/* Left fin */}
+      <path
+        d="M20 36 C16 38, 12 40, 10 38 C9 37, 10 35, 12 35 C14 35, 17 36, 20 36"
+        fill={C.red}
+      />
+      {/* Right fin */}
+      <path
+        d="M20 36 C24 38, 28 40, 30 38 C31 37, 30 35, 28 35 C26 35, 23 36, 20 36"
+        fill={C.redDark}
+      />
+      <defs>
+        <linearGradient id="logoGrad" x1="8" y1="4" x2="32" y2="36">
+          <stop offset="0%" stopColor={C.redLight}/>
+          <stop offset="50%" stopColor={C.red}/>
+          <stop offset="100%" stopColor={C.redDark}/>
+        </linearGradient>
+      </defs>
+    </svg>
+  );
+}
 
 // ─── Shared Components ────────────────────────────────────────────────────────
 
@@ -73,8 +104,8 @@ function Card({ children, style = {}, onClick, glowColor }: { children: React.Re
         background: hovered ? C.surfaceHover : C.surface,
         border: `1.5px solid ${hovered ? C.borderHover : C.border}`,
         borderRadius: 16,
-        boxShadow: hovered ? `0 0 24px ${gc}22, 0 8px 24px rgba(0,0,0,0.4)` : "0 2px 8px rgba(0,0,0,0.2)",
-        transform: hovered && onClick ? "translateY(-3px) scale(1.01)" : "translateY(0) scale(1)",
+        boxShadow: hovered ? `0 0 14px ${gc}11, 0 6px 20px rgba(0,0,0,0.35)` : "0 2px 8px rgba(0,0,0,0.2)",
+        transform: hovered && onClick ? "translateY(-2px) scale(1.005)" : "translateY(0) scale(1)",
         transition: "all 0.25s cubic-bezier(0.34,1.56,0.64,1)",
         cursor: onClick ? "pointer" : "default",
         ...style,
@@ -93,8 +124,8 @@ function Btn({ children, color = C.red, onClick, full = false, variant = "solid"
   const bg = variant === "solid" ? (disabled ? "rgba(255,26,26,0.12)" : color) : "transparent";
   const border = variant === "outline" ? `2px solid ${color}` : "2px solid transparent";
   const textColor = variant === "solid" ? (disabled ? "#6b3333" : "#fff") : color;
-  const shadow = variant === "solid" && !disabled ? `0 4px 16px ${color}55, 0 0 24px ${color}22` : "none";
-  const hoverShadow = variant === "solid" && !disabled ? `0 6px 24px ${color}66, 0 0 36px ${color}33` : variant === "outline" ? `0 0 16px ${color}33` : "none";
+  const shadow = variant === "solid" && !disabled ? `0 2px 10px ${color}33` : "none";
+  const hoverShadow = variant === "solid" && !disabled ? `0 4px 16px ${color}44` : variant === "outline" ? `0 0 8px ${color}18` : "none";
   return (
     <button onClick={onClick} disabled={disabled}
       onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
@@ -161,7 +192,7 @@ function NavButton({ label, icon, active, onClick }: { label: string; icon: stri
   return (
     <button onClick={onClick} title={label}
       onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
-      style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 50, border: "none", background: active ? C.red : hovered ? "rgba(255,26,26,0.15)" : "transparent", color: active ? "#fff" : hovered ? C.text : C.textMuted, cursor: "pointer", fontSize: 12, fontWeight: 700, transition: "all 0.2s cubic-bezier(0.34,1.56,0.64,1)", boxShadow: active ? `0 0 16px ${C.red}55, 0 2px 8px ${C.red}33` : "none", transform: hovered && !active ? "scale(1.08)" : active ? "scale(1)" : "scale(1)", ...ui }}
+      style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 50, border: "none", background: active ? C.red : hovered ? "rgba(255,26,26,0.10)" : "transparent", color: active ? "#fff" : hovered ? C.text : C.textMuted, cursor: "pointer", fontSize: 12, fontWeight: 700, transition: "all 0.2s cubic-bezier(0.34,1.56,0.64,1)", boxShadow: active ? `0 0 10px ${C.red}33` : "none", transform: hovered && !active ? "scale(1.05)" : active ? "scale(1)" : "scale(1)", ...ui }}
     >
       <span style={{ fontSize: 14, lineHeight: 1 }}>{icon}</span>
       <span style={{ fontSize: 12 }}>{label}</span>
@@ -169,14 +200,14 @@ function NavButton({ label, icon, active, onClick }: { label: string; icon: stri
   );
 }
 
-function Navbar({ xp, rank }: { xp: number; rank: Rank }) {
+function Navbar({ xp, rank, playerName }: { xp: number; rank: Rank; playerName: string }) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const screen = pathname.replace("/", "") || "home";
   return (
     <header style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, padding: "10px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(10,10,10,0.94)", backdropFilter: "blur(20px)", borderBottom: `2px solid ${C.border}` }}>
       <button onClick={() => navigate("/home")} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 10 }}>
-        <div style={{ width: 34, height: 34, borderRadius: 10, background: `linear-gradient(135deg, ${C.red}, ${C.redDark})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, boxShadow: C.redGlow, animation: "pulse 2s ease-in-out infinite" }}>🌊</div>
+        <div style={{ width: 36, height: 36, borderRadius: 10, background: `linear-gradient(135deg, #1a0808, ${C.surface})`, border: `1.5px solid ${C.red}44`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: C.redGlow, animation: "pulse 2s ease-in-out infinite" }}><SirenaLogo size={28} /></div>
         <span style={{ ...pixel, fontSize: 10, color: C.text, letterSpacing: 1 }}>SI<span style={{ color: C.red, textShadow: `0 0 10px ${C.red}88` }}>RENE</span></span>
       </button>
 
@@ -189,8 +220,8 @@ function Navbar({ xp, rank }: { xp: number; rank: Rank }) {
       <div style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(255,26,26,0.04)", border: `1.5px solid ${C.border}`, borderRadius: 50, padding: "5px 14px 5px 6px", cursor: "pointer", transition: "all 0.2s" }} onClick={() => navigate("/profile")}>
         <RankBadge rank={rank} size={28} />
         <div style={{ lineHeight: 1.2 }}>
-          <div style={{ ...ui, fontSize: 11, fontWeight: 800, color: C.text }}>PLAYER_ONE</div>
-          <div style={{ ...mono, fontSize: 9, color: RANKS[rank].color, textShadow: `0 0 6px ${RANKS[rank].color}44` }}>{xp.toLocaleString()} XP</div>
+          <div style={{ ...ui, fontSize: 11, fontWeight: 800, color: C.text }}>{playerName}</div>
+          <div style={{ ...mono, fontSize: 9, color: RANKS[rank].color }}>{xp.toLocaleString()} XP</div>
         </div>
       </div>
     </header>
@@ -288,7 +319,7 @@ function LoginScreen() {
       </div>
 
       <div style={{ textAlign: "center", marginBottom: 36, animation: "slideDown 0.6s ease-out" }}>
-        <div style={{ width: 80, height: 80, borderRadius: 20, margin: "0 auto 20px", background: `linear-gradient(135deg, ${C.red}, ${C.redDark})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 38, boxShadow: `0 0 40px ${C.red}55, 0 0 80px ${C.red}22`, animation: "pulse 2.5s ease-in-out infinite" }}>🌊</div>
+        <div style={{ width: 84, height: 84, borderRadius: 22, margin: "0 auto 20px", background: `linear-gradient(135deg, #1a0808, ${C.surface})`, border: `2px solid ${C.red}33`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 0 24px ${C.red}22, 0 0 48px ${C.red}11`, animation: "pulse 2.5s ease-in-out infinite" }}><SirenaLogo size={56} /></div>
         <h1 style={{ ...pixel, fontSize: 18, color: C.text, letterSpacing: 3, margin: 0 }}>
           SI<span style={{ color: C.red, textShadow: `0 0 14px ${C.red}99` }}>RENE</span>
         </h1>
@@ -343,7 +374,7 @@ function LoginScreen() {
 
 // ─── Screen: Home ─────────────────────────────────────────────────────────────
 
-function HomeScreen({ xp, rank }: { xp: number; rank: Rank }) {
+function HomeScreen({ xp, rank, playerName }: { xp: number; rank: Rank; playerName: string }) {
   const navigate = useNavigate();
   const onNav = (s: Screen) => navigate(`/${s}`);
   const cfg = RANKS[rank];
@@ -369,7 +400,7 @@ function HomeScreen({ xp, rank }: { xp: number; rank: Rank }) {
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-              <span style={{ ...ui, fontSize: 16, fontWeight: 900, color: C.text }}>PLAYER_ONE</span>
+              <span style={{ ...ui, fontSize: 16, fontWeight: 900, color: C.text }}>{playerName}</span>
               <span style={{ ...pixel, fontSize: 7, color: cfg.color, background: cfg.bg, border: `1.5px solid ${cfg.color}44`, padding: "3px 8px", borderRadius: 6, boxShadow: `0 0 6px ${cfg.color}22` }}>{rank}</span>
               <span style={{ ...ui, fontSize: 12, color: C.orange, animation: "wiggle 2s ease-in-out infinite" }}>🔥 7-day streak</span>
             </div>
@@ -699,52 +730,151 @@ function EvaluationScreen({ onXP }: { onXP: (n: number) => void }) {
 // ─── Screen: Leaderboard ──────────────────────────────────────────────────────
 
 function LeaderboardScreen() {
-  const [tab, setTab] = useState<"Global" | "Language" | "Weekly">("Global");
-  const players = [
-    { name: "PIXEL_MASTER",  xp: 14200, rank: "Sirena" as Rank,      flag: "🇵🇭", streak: 45, avatar: "🧑",   me: false },
-    { name: "NEON_LINGUIST", xp: 11800, rank: "Sirena" as Rank,      flag: "🇵🇭", streak: 32, avatar: "👩",   me: false },
-    { name: "ARCADE_NINJA",  xp: 9600,  rank: "Aswang" as Rank,      flag: "🇵🇭", streak: 28, avatar: "🧙",   me: false },
-    { name: "BYTE_SPEAKER",  xp: 8200,  rank: "Aswang" as Rank,      flag: "🇵🇭", streak: 21, avatar: "🤖",   me: false },
-    { name: "GLITCH_TONGUE", xp: 5900,  rank: "Manananggal" as Rank, flag: "🇵🇭", streak: 15, avatar: "🦊",   me: false },
-    { name: "PLAYER_ONE",    xp: 4750,  rank: "Manananggal" as Rank, flag: "🇵🇭", streak: 7,  avatar: "🧑‍💻", me: true  },
-    { name: "RETRO_TALKER",  xp: 2300,  rank: "Tikbalang" as Rank,   flag: "🇵🇭", streak: 9,  avatar: "🎮",   me: false },
-    { name: "LANG_ROOKIE",   xp: 800,   rank: "Nuno" as Rank,        flag: "🇵🇭", streak: 3,  avatar: "🌱",   me: false },
+  type MainTab = "global" | "language" | "weekly";
+  const languages = ["Bisaya", "Hiligaynon", "Ilokano", "Kapampangan", "Waray"] as const;
+  type Lang = typeof languages[number];
+  const [mainTab, setMainTab] = useState<MainTab>("global");
+  const [selectedLang, setSelectedLang] = useState<Lang>("Bisaya");
+
+  // Player data per language
+  type PlayerEntry = { name: string; xp: number; rank: Rank; flag: string; streak: number; avatar: string; me: boolean };
+  const globalData: PlayerEntry[] = [
+      { name: "PIXEL_MASTER",  xp: 14200, rank: "Sirena",      flag: "🇵🇭", streak: 45, avatar: "🧑",   me: false },
+      { name: "NEON_LINGUIST", xp: 11800, rank: "Sirena",      flag: "🇵🇭", streak: 32, avatar: "👩",   me: false },
+      { name: "ARCADE_NINJA",  xp: 9600,  rank: "Aswang",      flag: "🇵🇭", streak: 28, avatar: "🧙",   me: false },
+      { name: "BYTE_SPEAKER",  xp: 8200,  rank: "Aswang",      flag: "🇵🇭", streak: 21, avatar: "🤖",   me: false },
+      { name: "GLITCH_TONGUE", xp: 5900,  rank: "Manananggal", flag: "🇵🇭", streak: 15, avatar: "🦊",   me: false },
+      { name: "PLAYER_ONE",    xp: 4750,  rank: "Manananggal", flag: "🇵🇭", streak: 7,  avatar: "🧑‍💻", me: true  },
+      { name: "RETRO_TALKER",  xp: 2300,  rank: "Tikbalang",   flag: "🇵🇭", streak: 9,  avatar: "🎮",   me: false },
+      { name: "LANG_ROOKIE",   xp: 800,   rank: "Nuno",        flag: "🇵🇭", streak: 3,  avatar: "🌱",   me: false },
+    ];
+
+  const languageData: Record<Lang, PlayerEntry[]> = {
+    Bisaya: [
+      { name: "CEBU_KING",     xp: 12400, rank: "Sirena",      flag: "🇵🇭", streak: 50, avatar: "👑",   me: false },
+      { name: "VISAYAN_PRO",   xp: 9800,  rank: "Aswang",      flag: "🇵🇭", streak: 33, avatar: "🌊",   me: false },
+      { name: "ISLAND_VOICE",  xp: 7600,  rank: "Aswang",      flag: "🇵🇭", streak: 22, avatar: "🏝️",   me: false },
+      { name: "SUGBO_MASTER",  xp: 6100,  rank: "Manananggal", flag: "🇵🇭", streak: 18, avatar: "�",   me: false },
+      { name: "PLAYER_ONE",    xp: 4200,  rank: "Manananggal", flag: "🇵🇭", streak: 7,  avatar: "🧑‍💻", me: true  },
+      { name: "BISAYA_NOOB",   xp: 2800,  rank: "Tikbalang",   flag: "🇵🇭", streak: 11, avatar: "🐣",   me: false },
+      { name: "DIALECT_FAN",   xp: 1500,  rank: "Tikbalang",   flag: "🇵🇭", streak: 5,  avatar: "📖",   me: false },
+      { name: "NEW_LEARNER",   xp: 600,   rank: "Nuno",        flag: "🇵🇭", streak: 2,  avatar: "🌱",   me: false },
+    ],
+    Hiligaynon: [
+      { name: "ILONGGO_ACE",   xp: 11200, rank: "Sirena",      flag: "🇵🇭", streak: 40, avatar: "🎯",   me: false },
+      { name: "PANAY_PRIDE",   xp: 8900,  rank: "Aswang",      flag: "🇵🇭", streak: 29, avatar: "🌺",   me: false },
+      { name: "HILIG_MASTER",  xp: 7200,  rank: "Aswang",      flag: "🇵🇭", streak: 20, avatar: "🔥",   me: false },
+      { name: "PLAYER_ONE",    xp: 3100,  rank: "Manananggal", flag: "🇵🇭", streak: 7,  avatar: "🧑‍💻", me: true  },
+      { name: "SUGAR_LAND",    xp: 2400,  rank: "Tikbalang",   flag: "🇵🇭", streak: 8,  avatar: "🍬",   me: false },
+      { name: "WEST_VIS",      xp: 1800,  rank: "Tikbalang",   flag: "🇵🇭", streak: 6,  avatar: "🧭",   me: false },
+      { name: "ILOILO_KID",    xp: 900,   rank: "Nuno",        flag: "🇵🇭", streak: 4,  avatar: "🎮",   me: false },
+      { name: "FRESH_START",   xp: 400,   rank: "Nuno",        flag: "🇵🇭", streak: 1,  avatar: "✨",   me: false },
+    ],
+    Ilokano: [
+      { name: "NORTE_LEGEND",  xp: 13500, rank: "Sirena",      flag: "🇵🇭", streak: 55, avatar: "⭐",   me: false },
+      { name: "ILOCOS_BEST",   xp: 10200, rank: "Sirena",      flag: "🇵🇭", streak: 38, avatar: "🏔️",   me: false },
+      { name: "CORDILLERA",    xp: 8100,  rank: "Aswang",      flag: "🇵🇭", streak: 25, avatar: "🦅",   me: false },
+      { name: "VIGAN_VOICE",   xp: 6500,  rank: "Manananggal", flag: "🇵🇭", streak: 19, avatar: "🏛️",   me: false },
+      { name: "LAOAG_STAR",    xp: 4900,  rank: "Manananggal", flag: "🇵🇭", streak: 14, avatar: "💫",   me: false },
+      { name: "PLAYER_ONE",    xp: 2100,  rank: "Tikbalang",   flag: "🇵🇭", streak: 7,  avatar: "🧑‍💻", me: true  },
+      { name: "PINOY_LEARNER", xp: 1200,  rank: "Tikbalang",   flag: "🇵🇭", streak: 4,  avatar: "📚",   me: false },
+      { name: "BAGONG_ARAL",   xp: 500,   rank: "Nuno",        flag: "🇵🇭", streak: 2,  avatar: "🌱",   me: false },
+    ],
+    Kapampangan: [
+      { name: "PAMPANGA_PRO",  xp: 10800, rank: "Sirena",      flag: "🇵🇭", streak: 42, avatar: "🎖️",   me: false },
+      { name: "SISIG_KING",    xp: 8400,  rank: "Aswang",      flag: "🇵🇭", streak: 30, avatar: "🍳",   me: false },
+      { name: "KAPAMP_HERO",   xp: 6800,  rank: "Manananggal", flag: "🇵🇭", streak: 22, avatar: "🛡️",   me: false },
+      { name: "PLAYER_ONE",    xp: 3800,  rank: "Manananggal", flag: "🇵🇭", streak: 7,  avatar: "🧑‍💻", me: true  },
+      { name: "ANGELES_FAN",   xp: 2600,  rank: "Tikbalang",   flag: "🇵🇭", streak: 10, avatar: "😇",   me: false },
+      { name: "TARLAC_KID",    xp: 1400,  rank: "Tikbalang",   flag: "🇵🇭", streak: 5,  avatar: "🎮",   me: false },
+      { name: "LUZON_NOOB",    xp: 700,   rank: "Nuno",        flag: "🇵🇭", streak: 3,  avatar: "🐣",   me: false },
+      { name: "DAY_ONE",       xp: 200,   rank: "Nuno",        flag: "🇵🇭", streak: 1,  avatar: "🌱",   me: false },
+    ],
+    Waray: [
+      { name: "LEYTE_LEGEND",  xp: 9200,  rank: "Aswang",      flag: "🇵🇭", streak: 36, avatar: "🌋",   me: false },
+      { name: "SAMAR_STAR",    xp: 7500,  rank: "Aswang",      flag: "🇵🇭", streak: 24, avatar: "⚡",   me: false },
+      { name: "TACLOBAN_ACE",  xp: 5800,  rank: "Manananggal", flag: "🇵🇭", streak: 17, avatar: "🎯",   me: false },
+      { name: "EASTERN_VIS",   xp: 4100,  rank: "Manananggal", flag: "🇵🇭", streak: 12, avatar: "🌊",   me: false },
+      { name: "PLAYER_ONE",    xp: 1900,  rank: "Tikbalang",   flag: "🇵🇭", streak: 7,  avatar: "🧑‍💻", me: true  },
+      { name: "WARAY_NEWBIE",  xp: 1100,  rank: "Tikbalang",   flag: "🇵🇭", streak: 4,  avatar: "📖",   me: false },
+      { name: "REGION_EIGHT",  xp: 650,   rank: "Nuno",        flag: "🇵🇭", streak: 3,  avatar: "🎮",   me: false },
+      { name: "FIRST_TIMER",   xp: 300,   rank: "Nuno",        flag: "🇵🇭", streak: 1,  avatar: "🌱",   me: false },
+    ],
+  };
+
+  // Weekly data — shuffled XP values to simulate weekly rankings
+  const weeklyData: PlayerEntry[] = [
+    { name: "ARCADE_NINJA",  xp: 2400, rank: "Aswang",      flag: "🇵🇭", streak: 28, avatar: "🧙",   me: false },
+    { name: "PIXEL_MASTER",  xp: 2100, rank: "Sirena",      flag: "🇵🇭", streak: 45, avatar: "🧑",   me: false },
+    { name: "PLAYER_ONE",    xp: 1850, rank: "Manananggal", flag: "🇵🇭", streak: 7,  avatar: "🧑‍💻", me: true  },
+    { name: "NEON_LINGUIST", xp: 1600, rank: "Sirena",      flag: "🇵🇭", streak: 32, avatar: "👩",   me: false },
+    { name: "BYTE_SPEAKER",  xp: 1400, rank: "Aswang",      flag: "🇵🇭", streak: 21, avatar: "🤖",   me: false },
+    { name: "GLITCH_TONGUE", xp: 1200, rank: "Manananggal", flag: "🇵🇭", streak: 15, avatar: "🦊",   me: false },
+    { name: "RETRO_TALKER",  xp: 980,  rank: "Tikbalang",   flag: "🇵🇭", streak: 9,  avatar: "🎮",   me: false },
+    { name: "CEBU_KING",     xp: 870,  rank: "Sirena",      flag: "🇵🇭", streak: 50, avatar: "👑",   me: false },
+    { name: "LANG_ROOKIE",   xp: 650,  rank: "Nuno",        flag: "🇵🇭", streak: 3,  avatar: "🌱",   me: false },
+    { name: "NEW_LEARNER",   xp: 320,  rank: "Nuno",        flag: "🇵🇭", streak: 2,  avatar: "🌱",   me: false },
   ];
+
+  const players = mainTab === "global" ? globalData : mainTab === "language" ? languageData[selectedLang] : weeklyData;
   const medals = ["🥇", "🥈", "🥉"];
+  const subtitle = mainTab === "global" ? "Global ranking by total XP earned" : mainTab === "language" ? `Top players in ${selectedLang}` : "Top performers this week";
 
   return (
     <Page maxWidth={700}>
-      <PageHeader title="★ Leaderboard" subtitle="Global ranking by total XP earned" />
+      <PageHeader title="★ Leaderboard" subtitle={subtitle} />
 
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-end", gap: 12, marginBottom: 28 }}>
-        {[players[1], players[0], players[2]].map((p, i) => {
-          const orderIdx = [1, 0, 2];
-          const heights = [115, 145, 92];
-          const ri = orderIdx[i];
-          return (
-            <div key={p.name} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5, flex: 1, maxWidth: 130 }}>
-              <span style={{ fontSize: 20, animation: "bounce 2s ease-in-out infinite", animationDelay: `${ri * 0.2}s` }}>{medals[ri]}</span>
-              <div style={{ width: 42, height: 42, borderRadius: 12, background: "rgba(255,26,26,0.05)", border: `2px solid ${RANKS[p.rank].color}55`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, boxShadow: RANKS[p.rank].glow }}>{p.avatar}</div>
-              <span style={{ ...ui, fontSize: 10, fontWeight: 800, color: C.text, textAlign: "center" }}>{p.name}</span>
-              <div style={{ width: "100%", height: heights[i], borderRadius: "12px 12px 0 0", background: `linear-gradient(180deg, ${RANKS[p.rank].color}20, ${RANKS[p.rank].color}05)`, border: `1.5px solid ${RANKS[p.rank].color}33`, borderBottom: "none", display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: 10 }}>
-                <span style={{ ...mono, fontSize: 11, color: RANKS[p.rank].color, fontWeight: 700 }}>{(p.xp / 1000).toFixed(1)}k</span>
+      {/* Podium — top 3 */}
+      {players.length >= 3 && (
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-end", gap: 12, marginBottom: 28 }}>
+          {[players[1], players[0], players[2]].map((p, i) => {
+            const orderIdx = [1, 0, 2];
+            const heights = [115, 145, 92];
+            const ri = orderIdx[i];
+            return (
+              <div key={p.name} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5, flex: 1, maxWidth: 130 }}>
+                <span style={{ fontSize: 20, animation: "bounce 2s ease-in-out infinite", animationDelay: `${ri * 0.2}s` }}>{medals[ri]}</span>
+                <div style={{ width: 42, height: 42, borderRadius: 12, background: "rgba(255,26,26,0.05)", border: `2px solid ${RANKS[p.rank].color}55`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, boxShadow: RANKS[p.rank].glow }}>{p.avatar}</div>
+                <span style={{ ...ui, fontSize: 10, fontWeight: 800, color: C.text, textAlign: "center" }}>{p.name}</span>
+                <div style={{ width: "100%", height: heights[i], borderRadius: "12px 12px 0 0", background: `linear-gradient(180deg, ${RANKS[p.rank].color}20, ${RANKS[p.rank].color}05)`, border: `1.5px solid ${RANKS[p.rank].color}33`, borderBottom: "none", display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: 10 }}>
+                  <span style={{ ...mono, fontSize: 11, color: RANKS[p.rank].color, fontWeight: 700 }}>{(p.xp / 1000).toFixed(1)}k</span>
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
-      <div style={{ display: "flex", background: "rgba(255,26,26,0.04)", border: `2px solid ${C.border}`, borderRadius: 12, padding: 4, marginBottom: 14, width: "fit-content" }}>
-        {(["Global", "Language", "Weekly"] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)}
-            style={{ padding: "8px 20px", borderRadius: 8, border: "none", cursor: "pointer", fontWeight: 800, fontSize: 12, transition: "all 0.2s cubic-bezier(0.34,1.56,0.64,1)", background: tab === t ? C.red : "transparent", color: tab === t ? "#fff" : C.textMuted, boxShadow: tab === t ? `0 0 14px ${C.red}55` : "none", transform: tab === t ? "scale(1.03)" : "scale(1)", ...ui }}
-          >{t}</button>
+      {/* Tab bar: Global | Language | Weekly */}
+      <div style={{ display: "flex", background: "rgba(255,26,26,0.05)", border: `2px solid ${C.border}`, borderRadius: 14, padding: 4, marginBottom: 16 }}>
+        {([
+          { key: "global" as MainTab, label: "🌏 Global" },
+          { key: "language" as MainTab, label: "🗣️ Language" },
+          { key: "weekly" as MainTab, label: "📅 Weekly" },
+        ]).map((t) => (
+          <button key={t.key} onClick={() => setMainTab(t.key)}
+            style={{ flex: 1, padding: "10px", borderRadius: 10, border: "none", cursor: "pointer", background: mainTab === t.key ? C.red : "transparent", color: mainTab === t.key ? "#fff" : C.textMuted, fontWeight: 800, fontSize: 13, transition: "all 0.25s cubic-bezier(0.34,1.56,0.64,1)", boxShadow: mainTab === t.key ? `0 0 14px ${C.red}55` : "none", transform: mainTab === t.key ? "scale(1.02)" : "scale(1)", ...ui }}
+          >{t.label}</button>
         ))}
       </div>
 
+      {/* Language dropdown — only shown when Language tab is active */}
+      {mainTab === "language" && (
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ position: "relative", width: 220 }}>
+            <select value={selectedLang} onChange={(e) => setSelectedLang(e.target.value as Lang)}
+              style={{ ...ui, width: "100%", background: C.surface, border: `1.5px solid ${C.border}`, borderRadius: 10, padding: "10px 36px 10px 14px", color: C.text, fontSize: 13, fontWeight: 700, outline: "none", cursor: "pointer", appearance: "none" }}>
+              {languages.map((l) => <option key={l} value={l}>{l}</option>)}
+            </select>
+            <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: C.textMuted, pointerEvents: "none", fontSize: 12 }}>▾</span>
+          </div>
+        </div>
+      )}
+
+      {/* Player list */}
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {players.map((p, i) => (
-          <Card key={p.name} style={{ padding: "11px 14px", display: "flex", alignItems: "center", gap: 12, ...(p.me ? { border: `2px solid ${C.red}55`, background: "rgba(255,26,26,0.05)" } : {}) }} glowColor={p.me ? C.red : undefined}>
+          <Card key={p.name + mainTab + (mainTab === "language" ? selectedLang : "")} style={{ padding: "11px 14px", display: "flex", alignItems: "center", gap: 12, ...(p.me ? { border: `1.5px solid ${C.red}44`, background: "rgba(255,26,26,0.04)" } : {}) }} glowColor={p.me ? C.red : undefined}>
             <div style={{ width: 22, textAlign: "center", flexShrink: 0 }}>
               {i < 3 ? <span style={{ fontSize: 16 }}>{medals[i]}</span> : <span style={{ ...mono, fontSize: 11, color: C.textMuted }}>{i + 1}</span>}
             </div>
@@ -753,7 +883,7 @@ function LeaderboardScreen() {
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <span style={{ ...ui, fontSize: 12, fontWeight: 800, color: p.me ? C.redLight : C.text }}>{p.name}</span>
                 <span style={{ fontSize: 11 }}>{p.flag}</span>
-                {p.me && <span style={{ ...pixel, fontSize: 6, color: "#fff", background: C.red, padding: "2px 6px", borderRadius: 4, boxShadow: `0 0 6px ${C.red}44` }}>YOU</span>}
+                {p.me && <span style={{ ...pixel, fontSize: 6, color: "#fff", background: C.red, padding: "2px 6px", borderRadius: 4 }}>YOU</span>}
               </div>
               <span style={{ ...ui, fontSize: 11, color: C.textMuted }}>{p.xp.toLocaleString()} XP · {p.streak}🔥</span>
             </div>
@@ -865,11 +995,13 @@ function DailyScreen() {
 
 // ─── Screen: Profile ──────────────────────────────────────────────────────────
 
-function ProfileScreen({ xp, rank }: { xp: number; rank: Rank }) {
+function ProfileScreen({ xp, rank, playerName, onNameChange }: { xp: number; rank: Rank; playerName: string; onNameChange: (name: string) => void }) {
   const cfg = RANKS[rank];
   const pct = Math.min(100, ((xp - cfg.min) / (cfg.max - cfg.min)) * 100);
   const rankKeys = Object.keys(RANKS) as Rank[];
   const nextRank = rankKeys[Math.min(rankKeys.indexOf(rank) + 1, rankKeys.length - 1)];
+  const [editing, setEditing] = useState(false);
+  const [nameInput, setNameInput] = useState(playerName);
 
   const stats = [
     { val: "1,247", label: "Translations", color: C.cyan, icon: "💬" },
@@ -896,9 +1028,34 @@ function ProfileScreen({ xp, rank }: { xp: number; rank: Rank }) {
               <div style={{ position: "absolute", bottom: -4, right: -4 }}><RankBadge rank={rank} size={24} /></div>
             </div>
             <div>
-              <div style={{ ...ui, fontSize: 18, fontWeight: 900, color: C.text }}>PLAYER_ONE</div>
+              {editing ? (
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                  <input
+                    value={nameInput}
+                    onChange={(e) => setNameInput(e.target.value.toUpperCase())}
+                    maxLength={16}
+                    autoFocus
+                    style={{ ...ui, fontSize: 16, fontWeight: 900, color: C.text, background: "rgba(255,26,26,0.05)", border: `1.5px solid ${C.red}44`, borderRadius: 8, padding: "6px 12px", textAlign: "center", outline: "none", width: "100%", boxSizing: "border-box" }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && nameInput.trim()) { onNameChange(nameInput.trim()); setEditing(false); }
+                      if (e.key === "Escape") { setNameInput(playerName); setEditing(false); }
+                    }}
+                  />
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button onClick={() => { if (nameInput.trim()) { onNameChange(nameInput.trim()); setEditing(false); } }}
+                      style={{ ...ui, fontSize: 10, fontWeight: 700, color: "#fff", background: C.red, border: "none", borderRadius: 6, padding: "4px 12px", cursor: "pointer" }}>Save</button>
+                    <button onClick={() => { setNameInput(playerName); setEditing(false); }}
+                      style={{ ...ui, fontSize: 10, fontWeight: 700, color: C.textMuted, background: "transparent", border: `1px solid ${C.border}`, borderRadius: 6, padding: "4px 12px", cursor: "pointer" }}>Cancel</button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                  <div style={{ ...ui, fontSize: 18, fontWeight: 900, color: C.text }}>{playerName}</div>
+                  <button onClick={() => setEditing(true)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: C.textMuted, padding: 2 }} title="Edit name">✏️</button>
+                </div>
+              )}
               <div style={{ ...ui, fontSize: 11, color: C.textMuted, marginTop: 2 }}>Joined June 2024 · #00142</div>
-              <span style={{ ...pixel, fontSize: 7, color: cfg.color, background: cfg.bg, border: `1.5px solid ${cfg.color}44`, padding: "4px 8px", borderRadius: 6, display: "inline-block", marginTop: 8, boxShadow: `0 0 8px ${cfg.color}22` }}>{rank}</span>
+              <span style={{ ...pixel, fontSize: 7, color: cfg.color, background: cfg.bg, border: `1.5px solid ${cfg.color}44`, padding: "4px 8px", borderRadius: 6, display: "inline-block", marginTop: 8 }}>{rank}</span>
             </div>
             <div style={{ width: "100%" }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
@@ -947,20 +1104,21 @@ function ProfileScreen({ xp, rank }: { xp: number; rank: Rank }) {
 
 export default function App() {
   const [xp, setXP] = useState(4750);
+  const [playerName, setPlayerName] = useState("PLAYER_ONE");
   const rank = getRank(xp);
   const { pathname } = useLocation();
   const isLogin = pathname === "/" || pathname === "/login";
 
   return (
     <div style={{ ...ui, background: C.bg, minHeight: "100vh", color: C.text }}>
-      {/* Ambient red gradient — strong presence */}
-      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, background: "radial-gradient(ellipse at 15% 0%, rgba(255,26,26,0.07) 0%, transparent 50%), radial-gradient(ellipse at 85% 100%, rgba(255,26,26,0.04) 0%, transparent 40%), radial-gradient(circle at 50% 50%, rgba(255,26,26,0.02) 0%, transparent 60%)" }} />
-      {!isLogin && <Navbar xp={xp} rank={rank} />}
+      {/* Ambient red gradient — subtle presence */}
+      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, background: "radial-gradient(ellipse at 15% 0%, rgba(255,26,26,0.035) 0%, transparent 50%), radial-gradient(ellipse at 85% 100%, rgba(255,26,26,0.02) 0%, transparent 40%)" }} />
+      {!isLogin && <Navbar xp={xp} rank={rank} playerName={playerName} />}
       <div style={{ position: "relative", zIndex: 1 }}>
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login"        element={<LoginScreen />} />
-          <Route path="/home"         element={<HomeScreen xp={xp} rank={rank} />} />
+          <Route path="/home"         element={<HomeScreen xp={xp} rank={rank} playerName={playerName} />} />
           <Route path="/play"         element={<PlayScreen />} />
           <Route path="/mission"      element={<MissionScreen />} />
           <Route path="/recording"    element={<RecordingScreen />} />
@@ -968,7 +1126,7 @@ export default function App() {
           <Route path="/leaderboard"  element={<LeaderboardScreen />} />
           <Route path="/achievements" element={<AchievementsScreen />} />
           <Route path="/daily"        element={<DailyScreen />} />
-          <Route path="/profile"      element={<ProfileScreen xp={xp} rank={rank} />} />
+          <Route path="/profile"      element={<ProfileScreen xp={xp} rank={rank} playerName={playerName} onNameChange={setPlayerName} />} />
           <Route path="*"             element={<Navigate to="/home" replace />} />
         </Routes>
       </div>
