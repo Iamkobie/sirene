@@ -82,7 +82,7 @@ There are two ways to use Sirene:
 
 The frontend is already deployed and publicly accessible, so setting it up locally is **optional**.
 
-> **Live Application:** *(Insert live application URL here)*
+> **Live Application:** *https://sirene-sigma.vercel.app/*
 
 Most users can simply use the live application without installing the frontend.
 
