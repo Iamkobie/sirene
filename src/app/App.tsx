@@ -15,6 +15,7 @@ import { AchievementsScreen } from "./pages/Achievements";
 import { DailyScreen } from "./pages/Daily";
 import { ProfileScreen } from "./pages/Profile";
 import { TrainingScreen } from "./pages/Training";
+import { ConsentModal } from "./components/ConsentModal";
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const [checked, setChecked] = useState(false);
@@ -38,6 +39,7 @@ export default function App() {
   const [citiesList, setCitiesList] = useState<string[]>([]);
   const [equippedBanner, setEquippedBanner] = useState<string | null>(null);
   const [equippedAvatar, setEquippedAvatar] = useState<Rank | null>(null);
+  const [showConsent, setShowConsent] = useState(false);
   const rank = getRank(xp);
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -61,8 +63,21 @@ export default function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       const u = session?.user ?? null;
       setUser(u);
-      if (u) refreshProfile(u);
-      else { setPlayerName("PLAYER_ONE"); setXP(0.0); }
+      if (u) {
+        refreshProfile(u);
+        const hasAnswered = u.user_metadata?.agreed_to_share_audio !== undefined;
+        if (!hasAnswered) {
+          setShowConsent(true);
+        } else if (u.user_metadata?.agreed_to_share_audio === false) {
+          setShowConsent(true);
+        } else {
+          setShowConsent(false);
+        }
+      } else {
+        setPlayerName("PLAYER_ONE");
+        setXP(0.0);
+        setShowConsent(false);
+      }
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -112,6 +127,7 @@ export default function App() {
         {/* Noise texture overlay */}
         <div style={{ position: "absolute", inset: 0, opacity: 0.015, backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")" }} />
       </div>
+      {showConsent && <ConsentModal onClose={() => setShowConsent(false)} />}
       {!isLogin && <Navbar xp={xp} rank={rank} playerName={playerName} onLogout={async () => { await supabase.auth.signOut(); navigate("/login"); }} />}
       {/* Mobile bottom nav */}
       {!isLogin && (
