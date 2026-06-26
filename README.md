@@ -76,6 +76,21 @@ This creates a bilingual, AI-annotated dataset that can support future developme
 
 # 🚀 Setup Instructions
 
+There are two ways to use Sirene:
+
+### Option 1 — Use the Live Application (Recommended)
+
+The frontend is already deployed and publicly accessible, so setting it up locally is **optional**.
+
+> **Live Application:** *(Insert live application URL here)*
+
+Most users can simply use the live application without installing the frontend.
+
+---
+### Option 2 — Local Development
+
+If you plan to contribute to the project or modify the source code, follow the steps below.
+
 ## Prerequisites
 
 - Node.js (vXX or later)
@@ -87,7 +102,7 @@ This creates a bilingual, AI-annotated dataset that can support future developme
 ## 1. Clone the Repository
 
 ```bash
-git clone https://github.com/<your-username>/sirene.git
+git clone https://github.com/Iamkobie/sirene.git
 cd sirene
 ```
 
