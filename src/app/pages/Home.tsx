@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { supabase } from "../../lib/supabase";
+import { fetchTodayDailyQuest, flagsFromRow } from "../../lib/dailyQuest";
 import { C, ui, mono, pixel, RANKS } from "../constants/theme";
 import type { Rank, Screen } from "../constants/theme";
 import { RankBadge, ProgressBar, Card, Btn, SectionTitle, Page } from "../components/shared";
@@ -18,6 +19,7 @@ export function HomeScreen({ xp, rank, playerName }: { xp: number; rank: Rank; p
   const [streak, setStreak]               = useState(0);
   const [leaderRank, setLeaderRank]       = useState<number | null>(null);
   const [unlockedCount, setUnlockedCount] = useState(0);
+  const [questDone, setQuestDone]         = useState(0);
   const [langs, setLangs]                 = useState<{ name: string; level: string; pct: number; color: string }[]>([]);
 
   useEffect(() => {
@@ -36,6 +38,12 @@ export function HomeScreen({ xp, rank, playerName }: { xp: number; rank: Rank; p
         supabase.from("achievements").select("*").eq("user_id", user.id).maybeSingle(),
         supabase.from("user_language_progress").select("language, xp, level").eq("user_id", user.id).order("xp", { ascending: false }),
       ]);
+
+      // Daily quest count
+      const questRow = await fetchTodayDailyQuest(user.id);
+      const flags = flagsFromRow(questRow);
+      const done = Object.values(flags).filter(Boolean).length;
+      setQuestDone(done);
 
       // Streak
       setStreak(profile?.streak ?? 0);
@@ -68,9 +76,9 @@ export function HomeScreen({ xp, rank, playerName }: { xp: number; rank: Rank; p
   }, []);
 
   const exploreCards = [
-    { label: "Daily Quest",  icon: "⚡", sub: "4 quests available",                                          color: C.red,   screen: "daily"        as Screen },
-    { label: "Leaderboard",  icon: "★",  sub: leaderRank ? `You are ranked #${leaderRank}` : "View rankings", color: C.gold,  screen: "leaderboard"  as Screen },
-    { label: "Achievements", icon: "🏆", sub: `${unlockedCount} of 8 unlocked`,                              color: C.green, screen: "achievements" as Screen },
+    { label: "Daily Quest",  icon: "⚡", sub: `${questDone}/4 quests completed`,                                 color: C.red,   screen: "daily"        as Screen },
+    { label: "Leaderboard",  icon: "★",  sub: leaderRank ? `You are ranked #${leaderRank}` : "View rankings",   color: C.gold,  screen: "leaderboard"  as Screen },
+    { label: "Achievements", icon: "🏆", sub: `${unlockedCount} of 8 unlocked`,                                  color: C.green, screen: "achievements" as Screen },
   ];
 
   return (
