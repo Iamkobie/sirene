@@ -21,7 +21,7 @@ export function ProfileScreen({ xp, rank, playerName, onNameChange, equippedBann
       if (!user) return;
 
       const [{ data: profile }, { count: totalAttempts }, { data: langProgress }, { data: achRow }, { data: avgRow }] = await Promise.all([
-        supabase.from("profiles").select("streak, created_at").eq("id", user.id).single(),
+        supabase.from("profiles").select("streak, created_at").eq("id", user.id).maybeSingle(),
         supabase.from("user_phrase_attempts").select("*", { count: "exact", head: true }).eq("user_id", user.id),
         supabase.from("user_language_progress").select("language").eq("user_id", user.id),
         supabase.from("achievements").select("*").eq("user_id", user.id).maybeSingle(),

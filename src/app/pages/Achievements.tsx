@@ -41,7 +41,7 @@ export function AchievementsScreen() {
           { data: perfectCheck },
         ] = await Promise.all([
           supabase.from("achievements").select("*").eq("user_id", user.id).maybeSingle(),
-          supabase.from("profiles").select("xp, streak").eq("id", user.id).single(),
+          supabase.from("profiles").select("xp, streak").eq("id", user.id).maybeSingle(),
           supabase.from("user_phrase_attempts").select("*", { count: "exact", head: true }).eq("user_id", user.id),
           supabase.from("user_phrase_attempts").select("*", { count: "exact", head: true }).eq("user_id", user.id).gte("created_at", new Date().toISOString().split("T")[0]),
           supabase.from("user_language_progress").select("language").eq("user_id", user.id),

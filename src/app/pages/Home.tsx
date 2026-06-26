@@ -33,7 +33,7 @@ export function HomeScreen({ xp, rank, playerName }: { xp: number; rank: Rank; p
         { data: achRow },
         { data: langProgress },
       ] = await Promise.all([
-        supabase.from("profiles").select("streak").eq("id", user.id).single(),
+        supabase.from("profiles").select("streak").eq("id", user.id).maybeSingle(),
         supabase.from("profiles").select("id").order("xp", { ascending: false }),
         supabase.from("achievements").select("*").eq("user_id", user.id).maybeSingle(),
         supabase.from("user_language_progress").select("language, xp, level").eq("user_id", user.id).order("xp", { ascending: false }),
