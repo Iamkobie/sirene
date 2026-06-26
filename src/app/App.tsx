@@ -15,6 +15,7 @@ import { AchievementsScreen } from "./pages/Achievements";
 import { DailyScreen } from "./pages/Daily";
 import { ProfileScreen } from "./pages/Profile";
 import { TrainingScreen } from "./pages/Training";
+import { ConsentModal } from "./components/ConsentModal";
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const [checked, setChecked] = useState(false);
@@ -36,8 +37,11 @@ export default function App() {
   const [user, setUser] = useState<any>(null);
   const [challengePhrase, setChallengePhrase] = useState<any>(null);
   const [citiesList, setCitiesList] = useState<string[]>([]);
-  const [equippedBanner, setEquippedBanner] = useState<string | null>(null);
-  const [equippedAvatar, setEquippedAvatar] = useState<Rank | null>(null);
+  const [equippedBanner, _setEquippedBanner] = useState<string | null>(() => localStorage.getItem("sirene_banner"));
+  const [equippedAvatar, _setEquippedAvatar] = useState<Rank | null>(() => localStorage.getItem("sirene_avatar") as Rank | null);
+  const setEquippedBanner = (v: string | null) => { _setEquippedBanner(v); if (v) localStorage.setItem("sirene_banner", v); else localStorage.removeItem("sirene_banner"); };
+  const setEquippedAvatar = (v: Rank | null) => { _setEquippedAvatar(v); if (v) localStorage.setItem("sirene_avatar", v); else localStorage.removeItem("sirene_avatar"); };
+  const [showConsent, setShowConsent] = useState(false);
   const rank = getRank(xp);
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -61,8 +65,21 @@ export default function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       const u = session?.user ?? null;
       setUser(u);
-      if (u) refreshProfile(u);
-      else { setPlayerName("PLAYER_ONE"); setXP(0.0); }
+      if (u) {
+        refreshProfile(u);
+        const hasAnswered = u.user_metadata?.agreed_to_share_audio !== undefined;
+        if (!hasAnswered) {
+          setShowConsent(true);
+        } else if (u.user_metadata?.agreed_to_share_audio === false) {
+          setShowConsent(true);
+        } else {
+          setShowConsent(false);
+        }
+      } else {
+        setPlayerName("PLAYER_ONE");
+        setXP(0.0);
+        setShowConsent(false);
+      }
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -112,7 +129,8 @@ export default function App() {
         {/* Noise texture overlay */}
         <div style={{ position: "absolute", inset: 0, opacity: 0.015, backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")" }} />
       </div>
-      {!isLogin && <Navbar xp={xp} rank={rank} playerName={playerName} onLogout={async () => { await supabase.auth.signOut(); navigate("/login"); }} />}
+      {showConsent && <ConsentModal onClose={() => setShowConsent(false)} />}
+      {!isLogin && <Navbar xp={xp} rank={rank} playerName={playerName} onLogout={async () => { await supabase.auth.signOut(); navigate("/login"); }} equippedAvatar={equippedAvatar} />}
       {/* Mobile bottom nav */}
       {!isLogin && (
         <nav style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 100, display: "none", background: "rgba(10,10,10,0.96)", backdropFilter: "blur(20px)", borderTop: `1.5px solid ${C.border}`, padding: "8px 8px 12px", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
@@ -133,7 +151,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login"        element={<LoginScreen cities={citiesList} />} />
-          <Route path="/home"         element={<RequireAuth><HomeScreen xp={xp} rank={rank} playerName={playerName} /></RequireAuth>} />
+          <Route path="/home"         element={<RequireAuth><HomeScreen xp={xp} rank={rank} playerName={playerName} equippedAvatar={equippedAvatar} /></RequireAuth>} />
           <Route path="/play"         element={<RequireAuth><PlayScreen setChallengePhrase={setChallengePhrase} onXP={(n) => setXP((p) => p + n)} refreshProfile={refreshProfile} /></RequireAuth>} />
           <Route path="/training"     element={<RequireAuth><TrainingScreen onXP={(n) => setXP((p) => p + n)} /></RequireAuth>} />
           <Route path="/mission"      element={<RequireAuth><MissionScreen challengePhrase={challengePhrase} /></RequireAuth>} />

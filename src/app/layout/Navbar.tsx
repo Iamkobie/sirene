@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router";
-import { C, ui, mono, pixel, RANKS, NAV_ITEMS } from "../constants/theme";
+import { C, ui, mono, pixel, RANKS, NAV_ITEMS, RANK_ICONS } from "../constants/theme";
 import type { Rank } from "../constants/theme";
 import { SirenaLogo, RankBadge, NavButton } from "../components/shared";
 
-export function Navbar({ xp, rank, playerName, onLogout }: { xp: number; rank: Rank; playerName: string; onLogout: () => void }) {
+export function Navbar({ xp, rank, playerName, onLogout, equippedAvatar }: { xp: number; rank: Rank; playerName: string; onLogout: () => void; equippedAvatar: Rank | null }) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const screen = pathname.replace("/", "") || "home";
@@ -24,7 +24,13 @@ export function Navbar({ xp, rank, playerName, onLogout }: { xp: number; rank: R
 
       <div style={{ position: "relative" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(255,26,26,0.04)", border: `1.5px solid ${C.border}`, borderRadius: 50, padding: "5px 14px 5px 6px", cursor: "pointer", transition: "all 0.2s" }} onClick={() => setShowMenu((v) => !v)}>
-          <RankBadge rank={rank} size={28} />
+          {equippedAvatar ? (
+            <div style={{ width: 28, height: 28, borderRadius: "50%", overflow: "hidden", border: `2px solid ${RANKS[equippedAvatar].color}66`, flexShrink: 0 }}>
+              <img src={RANK_ICONS[equippedAvatar]} alt={equippedAvatar} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            </div>
+          ) : (
+            <RankBadge rank={rank} size={28} />
+          )}
           <div style={{ lineHeight: 1.2 }}>
             <div style={{ ...ui, fontSize: 11, fontWeight: 800, color: C.text }}>{playerName}</div>
             <div style={{ ...mono, fontSize: 9, color: RANKS[rank].color }}>{xp.toLocaleString()} XP</div>
