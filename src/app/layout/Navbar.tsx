@@ -35,7 +35,9 @@ export function Navbar({ xp, rank, playerName, onLogout, equippedAvatar }: { xp:
               <img src={RANK_ICONS[equippedAvatar]} alt={equippedAvatar} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
           ) : (
-            <RankBadge rank={rank} size={30} />
+            <div style={{ width: 30, height: 30, borderRadius: "50%", background: `linear-gradient(135deg, #1a0808, ${C.surface})`, border: `2px solid ${cfg.color}55`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <span style={{ fontSize: 14 }}>🧑‍💻</span>
+            </div>
           )}
           <div style={{ lineHeight: 1.2 }}>
             <div style={{ ...ui, fontSize: 11, fontWeight: 800, color: C.text }}>{playerName}</div>
