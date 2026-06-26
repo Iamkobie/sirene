@@ -2,13 +2,13 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { supabase } from "../../lib/supabase";
 import { fetchTodayDailyQuest, flagsFromRow } from "../../lib/dailyQuest";
-import { C, ui, mono, pixel, RANKS } from "../constants/theme";
+import { C, ui, mono, pixel, RANKS, RANK_ICONS } from "../constants/theme";
 import type { Rank, Screen } from "../constants/theme";
 import { RankBadge, ProgressBar, Card, Btn, SectionTitle, Page } from "../components/shared";
 
 const LANG_COLORS = [C.red, C.cyan, C.gold, C.orange, C.green];
 
-export function HomeScreen({ xp, rank, playerName }: { xp: number; rank: Rank; playerName: string }) {
+export function HomeScreen({ xp, rank, playerName, equippedAvatar }: { xp: number; rank: Rank; playerName: string; equippedAvatar: Rank | null }) {
   const navigate = useNavigate();
   const onNav = (s: Screen) => navigate(`/${s}`);
   const cfg = RANKS[rank];
@@ -88,7 +88,9 @@ export function HomeScreen({ xp, rank, playerName }: { xp: number; rank: Rank; p
         <div style={{ position: "absolute", top: 0, right: 0, width: 200, height: "100%", background: `linear-gradient(135deg, transparent, ${cfg.color}08)`, pointerEvents: "none" }} />
         <div style={{ display: "flex", alignItems: "center", gap: 16, position: "relative", flexWrap: "wrap" }}>
           <div style={{ position: "relative", flexShrink: 0 }}>
-            <div style={{ width: 52, height: 52, borderRadius: 14, background: `linear-gradient(135deg, #1a0808, ${C.surface})`, border: `2px solid ${cfg.color}55`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, boxShadow: cfg.glow }}>🧑💻</div>
+            <div style={{ width: 52, height: 52, borderRadius: 14, background: `linear-gradient(135deg, #1a0808, ${C.surface})`, border: `2px solid ${cfg.color}55`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, boxShadow: cfg.glow, overflow: "hidden" }}>
+              {equippedAvatar ? <img src={RANK_ICONS[equippedAvatar]} alt={equippedAvatar} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span>🧑💻</span>}
+            </div>
             <div style={{ position: "absolute", bottom: -5, right: -5 }}><RankBadge rank={rank} size={22} /></div>
           </div>
           <div style={{ flex: 1, minWidth: 180 }}>
