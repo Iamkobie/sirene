@@ -107,27 +107,35 @@ export default function App() {
       {/* Ambient background layers — retro playful design */}
       <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }}>
         {/* Base gradient orbs */}
-        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 15% 0%, rgba(255,26,26,0.04) 0%, transparent 50%), radial-gradient(ellipse at 85% 100%, rgba(255,26,26,0.025) 0%, transparent 40%), radial-gradient(ellipse at 50% 50%, rgba(79,195,247,0.015) 0%, transparent 60%)" }} />
+        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 15% 0%, rgba(255,26,26,0.05) 0%, transparent 50%), radial-gradient(ellipse at 85% 100%, rgba(255,26,26,0.03) 0%, transparent 40%), radial-gradient(ellipse at 50% 50%, rgba(79,195,247,0.02) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(255,215,0,0.015) 0%, transparent 45%)" }} />
         {/* Retro grid */}
-        <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(255,26,26,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,26,26,0.03) 1px, transparent 1px)", backgroundSize: "80px 80px", maskImage: "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.5) 20%, rgba(0,0,0,0.5) 80%, transparent 100%)" }} />
+        <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(255,26,26,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,26,26,0.035) 1px, transparent 1px)", backgroundSize: "70px 70px", maskImage: "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.4) 15%, rgba(0,0,0,0.4) 85%, transparent 100%)" }} />
+        {/* Perspective grid floor effect */}
+        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "40%", backgroundImage: "linear-gradient(transparent 0%, rgba(255,26,26,0.02) 100%), linear-gradient(90deg, rgba(255,26,26,0.02) 1px, transparent 1px)", backgroundSize: "100% 100%, 80px 100%", maskImage: "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.3) 100%)" }} />
         {/* Scanlines */}
-        <div style={{ position: "absolute", inset: 0, backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px)", opacity: 0.5 }} />
-        {/* Corner accent glow top-left */}
-        <div style={{ position: "absolute", top: -100, left: -100, width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(255,26,26,0.06) 0%, transparent 70%)", animation: "float 15s ease-in-out infinite" }} />
-        {/* Corner accent glow bottom-right */}
-        <div style={{ position: "absolute", bottom: -100, right: -100, width: 350, height: 350, borderRadius: "50%", background: "radial-gradient(circle, rgba(79,195,247,0.04) 0%, transparent 70%)", animation: "float 18s ease-in-out infinite 3s" }} />
+        <div style={{ position: "absolute", inset: 0, backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.025) 2px, rgba(0,0,0,0.025) 4px)", opacity: 0.6 }} />
+        {/* Large floating orbs */}
+        <div style={{ position: "absolute", top: -120, left: -120, width: 450, height: 450, borderRadius: "50%", background: "radial-gradient(circle, rgba(255,26,26,0.06) 0%, transparent 65%)", animation: "float 14s ease-in-out infinite" }} />
+        <div style={{ position: "absolute", bottom: -80, right: -80, width: 380, height: 380, borderRadius: "50%", background: "radial-gradient(circle, rgba(79,195,247,0.045) 0%, transparent 65%)", animation: "float 17s ease-in-out infinite 4s" }} />
+        <div style={{ position: "absolute", top: "40%", right: "15%", width: 250, height: 250, borderRadius: "50%", background: "radial-gradient(circle, rgba(255,215,0,0.025) 0%, transparent 65%)", animation: "float 20s ease-in-out infinite 7s" }} />
+        <div style={{ position: "absolute", top: "60%", left: "5%", width: 200, height: 200, borderRadius: "50%", background: "radial-gradient(circle, rgba(255,140,66,0.02) 0%, transparent 65%)", animation: "float 16s ease-in-out infinite 2s" }} />
         {/* Floating particles */}
-        <div style={{ position: "absolute", top: "20%", left: "10%", width: 4, height: 4, borderRadius: "50%", background: C.red, opacity: 0.15, animation: "float 6s ease-in-out infinite", boxShadow: `0 0 6px ${C.red}44` }} />
-        <div style={{ position: "absolute", top: "45%", right: "12%", width: 3, height: 3, borderRadius: "50%", background: C.cyan, opacity: 0.12, animation: "float 8s ease-in-out infinite 1s", boxShadow: `0 0 6px ${C.cyan}44` }} />
-        <div style={{ position: "absolute", top: "70%", left: "25%", width: 5, height: 5, borderRadius: "50%", background: C.gold, opacity: 0.1, animation: "float 7s ease-in-out infinite 2s", boxShadow: `0 0 8px ${C.gold}44` }} />
-        <div style={{ position: "absolute", top: "35%", left: "60%", width: 3, height: 3, borderRadius: "50%", background: C.red, opacity: 0.1, animation: "float 9s ease-in-out infinite 4s", boxShadow: `0 0 6px ${C.red}44` }} />
-        <div style={{ position: "absolute", top: "80%", right: "30%", width: 4, height: 4, borderRadius: "50%", background: C.orange, opacity: 0.08, animation: "float 11s ease-in-out infinite 5s", boxShadow: `0 0 6px ${C.orange}44` }} />
+        <div style={{ position: "absolute", top: "18%", left: "10%", width: 4, height: 4, borderRadius: "50%", background: C.red, opacity: 0.2, animation: "float 5s ease-in-out infinite", boxShadow: `0 0 8px ${C.red}66` }} />
+        <div style={{ position: "absolute", top: "42%", right: "12%", width: 3, height: 3, borderRadius: "50%", background: C.cyan, opacity: 0.18, animation: "float 7s ease-in-out infinite 1s", boxShadow: `0 0 6px ${C.cyan}66` }} />
+        <div style={{ position: "absolute", top: "68%", left: "22%", width: 5, height: 5, borderRadius: "50%", background: C.gold, opacity: 0.14, animation: "float 6s ease-in-out infinite 2s", boxShadow: `0 0 10px ${C.gold}55` }} />
+        <div style={{ position: "absolute", top: "30%", left: "55%", width: 3, height: 3, borderRadius: "50%", background: C.red, opacity: 0.12, animation: "float 8s ease-in-out infinite 3s", boxShadow: `0 0 6px ${C.red}44` }} />
+        <div style={{ position: "absolute", top: "82%", right: "28%", width: 4, height: 4, borderRadius: "50%", background: C.orange, opacity: 0.1, animation: "float 10s ease-in-out infinite 5s", boxShadow: `0 0 8px ${C.orange}44` }} />
+        <div style={{ position: "absolute", top: "12%", right: "35%", width: 3, height: 3, borderRadius: "50%", background: C.cyan, opacity: 0.1, animation: "float 9s ease-in-out infinite 6s", boxShadow: `0 0 6px ${C.cyan}44` }} />
+        <div style={{ position: "absolute", top: "55%", left: "42%", width: 4, height: 4, borderRadius: "50%", background: C.gold, opacity: 0.08, animation: "float 12s ease-in-out infinite 4s", boxShadow: `0 0 8px ${C.gold}33` }} />
+        <div style={{ position: "absolute", top: "90%", left: "65%", width: 3, height: 3, borderRadius: "50%", background: C.red, opacity: 0.1, animation: "float 7.5s ease-in-out infinite 2.5s", boxShadow: `0 0 6px ${C.red}44` }} />
         {/* Retro diagonal accent lines */}
-        <div style={{ position: "absolute", top: "5%", right: "5%", width: 120, height: 1, background: `linear-gradient(90deg, transparent, ${C.red}15, transparent)`, transform: "rotate(-45deg)", animation: "pulse 4s ease-in-out infinite" }} />
-        <div style={{ position: "absolute", bottom: "10%", left: "8%", width: 100, height: 1, background: `linear-gradient(90deg, transparent, ${C.cyan}12, transparent)`, transform: "rotate(30deg)", animation: "pulse 5s ease-in-out infinite 2s" }} />
-        <div style={{ position: "absolute", top: "50%", left: "3%", width: 80, height: 1, background: `linear-gradient(90deg, transparent, ${C.gold}10, transparent)`, transform: "rotate(-20deg)", animation: "pulse 6s ease-in-out infinite 1s" }} />
+        <div style={{ position: "absolute", top: "6%", right: "6%", width: 140, height: 1, background: `linear-gradient(90deg, transparent, ${C.red}18, transparent)`, transform: "rotate(-40deg)", animation: "pulse 5s ease-in-out infinite" }} />
+        <div style={{ position: "absolute", bottom: "12%", left: "6%", width: 110, height: 1, background: `linear-gradient(90deg, transparent, ${C.cyan}15, transparent)`, transform: "rotate(25deg)", animation: "pulse 6s ease-in-out infinite 2s" }} />
+        <div style={{ position: "absolute", top: "48%", left: "2%", width: 90, height: 1, background: `linear-gradient(90deg, transparent, ${C.gold}12, transparent)`, transform: "rotate(-18deg)", animation: "pulse 7s ease-in-out infinite 1s" }} />
+        <div style={{ position: "absolute", top: "25%", right: "3%", width: 70, height: 1, background: `linear-gradient(90deg, transparent, ${C.orange}10, transparent)`, transform: "rotate(35deg)", animation: "pulse 8s ease-in-out infinite 3s" }} />
+        <div style={{ position: "absolute", bottom: "35%", right: "12%", width: 100, height: 1, background: `linear-gradient(90deg, transparent, ${C.red}10, transparent)`, transform: "rotate(-55deg)", animation: "pulse 9s ease-in-out infinite 4s" }} />
         {/* Noise texture overlay */}
-        <div style={{ position: "absolute", inset: 0, opacity: 0.015, backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")" }} />
+        <div style={{ position: "absolute", inset: 0, opacity: 0.02, backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")" }} />
       </div>
       {showConsent && <ConsentModal onClose={() => setShowConsent(false)} />}
       {!isLogin && <Navbar xp={xp} rank={rank} playerName={playerName} onLogout={async () => { await supabase.auth.signOut(); navigate("/login"); }} equippedAvatar={equippedAvatar} />}
