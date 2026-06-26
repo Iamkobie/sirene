@@ -308,43 +308,57 @@ export function PlayScreen({
     setEvaluating(false);
   };
 
-  // ── End challenge
+  // ── Save all evaluated attempts to DB, update profiles.xp
+  const saveResultsToDB = async (): Promise<number> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return 0;
+
+    let sessionXP = 0;
+    for (const a of attempts) {
+      if (!a.evaluation) continue;
+      const { error } = await supabase.from("user_phrase_attempts").insert({
+        user_id:             user.id,
+        phrase_id:           a.phraseData.phrase_id,
+        target_language:     a.phraseData.target_language,
+        clip_id:             a.evaluation.clip_id,
+        transcription:       a.evaluation.transcription,
+        fluency_score:       a.evaluation.fluency,
+        pronunciation_score: a.evaluation.pronunciation,
+        completeness_score:  a.evaluation.completeness,
+        accuracy_score:      a.evaluation.accuracy,
+        overall_score:       a.evaluation.overall_score,
+        points_earned:       a.xpEarned ?? 0,
+        feedback:            a.evaluation.feedback,
+      });
+      if (error) {
+        console.error("Insert error:", error.message, error.details, error.hint);
+      } else {
+        sessionXP += a.xpEarned ?? 0;
+      }
+    }
+    return sessionXP;
+  };
+
+  // ── End challenge — wait for evals, save to DB, then show results
   const handleEndChallenge = async () => {
     setGameState("waiting");
+
+    // Wait for background evaluations to finish (max 60s)
     const deadline = Date.now() + 60_000;
     while ((evalQueueRef.current.length > 0 || evaluatingRef.current) && Date.now() < deadline) {
       await new Promise((r) => setTimeout(r, 300));
     }
+
+    // Save to DB immediately — don't wait for user to click "Save"
+    const sessionXP = await saveResultsToDB();
+    if (sessionXP > 0) onXP?.(sessionXP);
+    refreshProfile?.();
+
     setGameState("results");
   };
 
-  // ── Save results
+  // ── "Save & Finish" on results screen — just confetti + navigate (already saved)
   const handleSaveResults = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    let sessionXP = 0;
-    for (const a of attempts) {
-      if (!a.evaluation) continue;
-      try {
-        await supabase.from("user_phrase_attempts").insert({
-          user_id:              user.id,
-          phrase_id:            a.phraseData.phrase_id,       // TEXT — AI-generated ID e.g. "phrase_86d144a1"
-          target_language:      a.phraseData.target_language, // needed by DB trigger for per-language XP
-          clip_id:              a.evaluation.clip_id,
-          transcription:        a.evaluation.transcription,
-          fluency_score:        a.evaluation.fluency,
-          pronunciation_score:  a.evaluation.pronunciation,
-          completeness_score:   a.evaluation.completeness,
-          accuracy_score:       a.evaluation.accuracy,
-          overall_score:        a.evaluation.overall_score,
-          points_earned:        a.xpEarned ?? 0,              // already includes hint deductions
-          feedback:             a.evaluation.feedback,
-        });
-        sessionXP += a.xpEarned ?? 0;
-      } catch (e) { console.error("Save error:", e); }
-    }
-    if (sessionXP > 0) onXP?.(sessionXP);
-    refreshProfile?.();
     confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 } });
     setGameState("setup");
     setAttempts([]);
@@ -615,9 +629,9 @@ export function PlayScreen({
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "60vh", gap: 24 }}>
           <div style={{ width: 52, height: 52, border: `4px solid rgba(255,26,26,0.1)`, borderTop: `4px solid ${C.red}`, borderRadius: "50%", animation: "spin 1s linear infinite", boxShadow: `0 0 16px ${C.red}33` }} />
           <div style={{ textAlign: "center" }}>
-            <div style={{ ...ui, fontSize: 18, fontWeight: 800, color: C.text, marginBottom: 8 }}>Finalizing Evaluation</div>
+            <div style={{ ...ui, fontSize: 18, fontWeight: 800, color: C.text, marginBottom: 8 }}>Finalizing...</div>
             <div style={{ ...ui, fontSize: 13, color: C.textMuted, lineHeight: 1.6 }}>
-              Waiting for AI to finish scoring your last recording.<br />This only takes a few seconds.
+              Evaluating your last recording and saving results.<br />This only takes a few seconds.
             </div>
           </div>
         </div>
@@ -688,7 +702,7 @@ export function PlayScreen({
 
         <div style={{ display: "flex", gap: 10 }}>
           <Btn color={C.textMuted} variant="outline" size="md" onClick={() => navigate("/home")}>Home</Btn>
-          <Btn color={C.green} size="md" onClick={handleSaveResults}>Save & Finish</Btn>
+          <Btn color={C.green} size="md" onClick={handleSaveResults}>Done</Btn>
           <Btn color={C.red} size="md" onClick={() => { setGameState("setup"); setAttempts([]); setCurrentPhrase(null); }}>
             New Challenge
           </Btn>
