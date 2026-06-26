@@ -89,7 +89,7 @@ export function HomeScreen({ xp, rank, playerName, equippedAvatar }: { xp: numbe
         <div style={{ display: "flex", alignItems: "center", gap: 16, position: "relative", flexWrap: "wrap" }}>
           <div style={{ position: "relative", flexShrink: 0 }}>
             <div style={{ width: 52, height: 52, borderRadius: 14, background: `linear-gradient(135deg, #1a0808, ${C.surface})`, border: `2px solid ${cfg.color}55`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, boxShadow: cfg.glow, overflow: "hidden" }}>
-              {equippedAvatar ? <img src={RANK_ICONS[equippedAvatar]} alt={equippedAvatar} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span>🧑💻</span>}
+              {equippedAvatar ? <img src={RANK_ICONS[equippedAvatar]} alt={equippedAvatar} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ fontSize: 24 }}>🧑‍💻</span>}
             </div>
             <div style={{ position: "absolute", bottom: -5, right: -5 }}><RankBadge rank={rank} size={22} /></div>
           </div>
