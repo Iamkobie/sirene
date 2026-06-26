@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "../../lib/supabase";
 import { C, ui, mono, pixel, RANKS, RANK_SVGS, RANK_ICONS, RANK_BANNERS, COMING_SOON_BANNERS } from "../constants/theme";
 import type { Rank } from "../constants/theme";
 import { ProgressBar, Card, Btn, Page } from "../components/shared";
@@ -11,6 +12,78 @@ export function ProfileScreen({ xp, rank, playerName, onNameChange, equippedBann
   const [editMode, setEditMode] = useState(false);
   const [nameInput, setNameInput] = useState(playerName);
 
+  const [stats, setStats] = useState({ translations: 0, dialects: 0, streak: 0, accuracy: 0, joinedAt: "" });
+  const [unlockedAchievements, setUnlockedAchievements] = useState<{ key: string; icon: string; title: string; color: string }[]>([]);
+
+  useEffect(() => {
+    async function load() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const [{ data: profile }, { count: totalAttempts }, { data: langProgress }, { data: achRow }, { data: avgRow }] = await Promise.all([
+        supabase.from("profiles").select("streak, created_at").eq("id", user.id).single(),
+        supabase.from("user_phrase_attempts").select("*", { count: "exact", head: true }).eq("user_id", user.id),
+        supabase.from("user_language_progress").select("language").eq("user_id", user.id),
+        supabase.from("achievements").select("*").eq("user_id", user.id).maybeSingle(),
+        supabase.from("user_phrase_attempts").select("overall_score").eq("user_id", user.id),
+      ]);
+
+      const avgAccuracy = avgRow && avgRow.length > 0
+        ? Math.round(avgRow.reduce((sum: number, r: any) => sum + (r.overall_score ?? 0), 0) / avgRow.length)
+        : 0;
+
+      const joined = profile?.created_at
+        ? new Date(profile.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })
+        : "";
+
+      setStats({
+        translations: totalAttempts ?? 0,
+        dialects:     langProgress?.length ?? 0,
+        streak:       profile?.streak ?? 0,
+        accuracy:     avgAccuracy,
+        joinedAt:     joined,
+      });
+
+      // Re-evaluate achievements based on current data and upsert
+      const [{ count: totalCount }, { count: todayCount }, { data: leaderboard }, { data: perfectCheck }] = await Promise.all([
+        supabase.from("user_phrase_attempts").select("*", { count: "exact", head: true }).eq("user_id", user.id),
+        supabase.from("user_phrase_attempts").select("*", { count: "exact", head: true }).eq("user_id", user.id).gte("created_at", new Date().toISOString().split("T")[0]),
+        supabase.from("profiles").select("id").order("xp", { ascending: false }).limit(1),
+        supabase.from("user_phrase_attempts").select("id").eq("user_id", user.id).eq("overall_score", 100).limit(1),
+      ]);
+
+      const computed = {
+        user_id:       user.id,
+        first_blood:   (achRow?.first_blood   === true) || (totalCount  ?? 0) >= 1,
+        hot_streak:    (achRow?.hot_streak    === true) || (profile?.streak ?? 0) >= 7,
+        sirena_quest:  (achRow?.sirena_quest  === true) || xp >= 10000,
+        polyglot:      (achRow?.polyglot      === true) || (langProgress?.length ?? 0) >= 5,
+        speed_demon:   (achRow?.speed_demon   === true) || (todayCount  ?? 0) >= 100,
+        perfect_score: (achRow?.perfect_score === true) || (perfectCheck?.length ?? 0) > 0,
+        top_rank:      (achRow?.top_rank      === true) || leaderboard?.[0]?.id === user.id,
+        book_worm:     (achRow?.book_worm     === true) || (totalCount  ?? 0) >= 500,
+      };
+
+      await supabase.from("achievements").upsert(computed, { onConflict: "user_id" });
+
+      // Map achievements row to display items — only unlocked ones
+      const ALL_ACHIEVEMENTS = [
+        { key: "first_blood",   icon: "🏆", title: "First Blood",   color: C.gold },
+        { key: "hot_streak",    icon: "🔥", title: "Hot Streak",    color: C.orange },
+        { key: "sirena_quest",  icon: "🧜‍♀️", title: "Sirena Quest",  color: C.cyan },
+        { key: "polyglot",      icon: "🌍", title: "Polyglot",      color: C.green },
+        { key: "speed_demon",   icon: "⚡", title: "Speed Demon",   color: C.red },
+        { key: "perfect_score", icon: "🎯", title: "Perfect Score", color: C.green },
+        { key: "top_rank",      icon: "👑", title: "Top Rank",      color: C.gold },
+        { key: "book_worm",     icon: "📚", title: "Bookworm",      color: C.red },
+      ];
+      setUnlockedAchievements(
+        ALL_ACHIEVEMENTS.filter((a) => !!(computed as any)[a.key])
+      );
+    }
+    load();
+  }, []);
+
   // Get all unlocked banners/avatars up to current rank
   const currentRankIdx = rankKeys.indexOf(rank);
   const unlockedBanners: { name: string; gradient: string; rank: Rank }[] = [];
@@ -22,19 +95,11 @@ export function ProfileScreen({ xp, rank, playerName, onNameChange, equippedBann
     }
   });
 
-  const stats = [
-    { val: "1,247", label: "Translations", color: C.cyan, icon: "💬" },
-    { val: "4",     label: "Dialects",     color: C.red, icon: "🌏" },
-    { val: "7",     label: "Day Streak",   color: C.orange, icon: "🔥" },
-    { val: "82%",   label: "Accuracy",     color: C.green, icon: "🎯" },
-  ];
-  const badges = [
-    { icon: "🎯", label: "Sharpshooter", earned: true },
-    { icon: "🔥", label: "On Fire",      earned: true },
-    { icon: "⚡", label: "Speedster",    earned: true },
-    { icon: "🌟", label: "All-Star",     earned: true },
-    { icon: "🏆", label: "Champion",     earned: false },
-    { icon: "💬", label: "Chatterbox",   earned: false },
+  const statCards = [
+    { val: stats.translations.toLocaleString(), label: "Translations", color: C.cyan,   icon: "💬" },
+    { val: String(stats.dialects),              label: "Dialects",     color: C.red,    icon: "🌏" },
+    { val: `${stats.streak}`,                   label: "Day Streak",   color: C.orange, icon: "🔥" },
+    { val: `${stats.accuracy}%`,                label: "Accuracy",     color: C.green,  icon: "🎯" },
   ];
 
   const activeBanner = unlockedBanners.find((b) => b.name === equippedBanner);
@@ -79,7 +144,7 @@ export function ProfileScreen({ xp, rank, playerName, onNameChange, equippedBann
                 <h2 style={{ ...ui, fontSize: 26, fontWeight: 900, color: C.text, margin: 0, letterSpacing: "-0.02em" }}>{playerName}</h2>
                 <span style={{ ...pixel, fontSize: 8, color: cfg.color, background: cfg.bg, border: `1.5px solid ${cfg.color}44`, padding: "5px 12px", borderRadius: 8, boxShadow: `0 0 10px ${cfg.color}22` }}>{rank}</span>
               </div>
-              <div style={{ ...ui, fontSize: 13, color: C.textMuted, marginBottom: 14 }}>Joined June 2024 · #00142 · <span style={{ color: C.orange }}>🔥 7-day streak</span></div>
+              <div style={{ ...ui, fontSize: 13, color: C.textMuted, marginBottom: 14 }}>{stats.joinedAt ? `Joined ${stats.joinedAt}` : ""} · <span style={{ color: C.orange }}>🔥 {stats.streak}-day streak</span></div>
               <div style={{ maxWidth: 380 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
                   <span style={{ ...ui, fontSize: 11, color: C.textMuted }}>{rank === "Sirena" ? "✦ Max Rank" : `→ ${nextRank}`}</span>
@@ -98,7 +163,7 @@ export function ProfileScreen({ xp, rank, playerName, onNameChange, equippedBann
 
       {/* Stats grid */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 14, marginBottom: 24 }}>
-        {stats.map((s, i) => (
+        {statCards.map((s, i) => (
           <Card key={s.label} style={{ padding: "22px 22px", animation: `slideUp 0.4s ease-out ${i * 0.08}s both`, position: "relative", overflow: "hidden" }} glowColor={s.color}>
             <div style={{ position: "absolute", top: -10, right: -10, width: 50, height: 50, borderRadius: "50%", background: `radial-gradient(circle, ${s.color}12, transparent)` }} />
             <div style={{ display: "flex", alignItems: "center", gap: 10, position: "relative" }}>
@@ -112,18 +177,28 @@ export function ProfileScreen({ xp, rank, playerName, onNameChange, equippedBann
         ))}
       </div>
 
-      {/* Badges */}
+      {/* Achievements — only unlocked */}
       <Card style={{ padding: 22 }} glowColor={C.red}>
-        <div style={{ ...ui, fontSize: 14, fontWeight: 800, color: C.text, marginBottom: 14 }}>🛡️ Badges</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(80px, 1fr))", gap: 10 }}>
-          {badges.map((b, i) => (
-            <div key={b.label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "16px 8px", borderRadius: 12, background: b.earned ? "rgba(255,26,26,0.04)" : "rgba(255,255,255,0.02)", opacity: b.earned ? 1 : 0.3, border: b.earned ? `1.5px solid ${C.red}22` : "1.5px solid transparent" }}>
-              <span style={{ fontSize: 26, animation: b.earned ? "bounce 3s ease-in-out infinite" : "none", animationDelay: `${i * 0.3}s` }}>{b.icon}</span>
-              <span style={{ ...ui, fontSize: 10, color: C.textMuted, textAlign: "center", fontWeight: 600 }}>{b.label}</span>
-              {b.earned && <span style={{ ...ui, fontSize: 9, color: C.green, fontWeight: 700 }}>Unlocked</span>}
-            </div>
-          ))}
+        <div style={{ ...ui, fontSize: 14, fontWeight: 800, color: C.text, marginBottom: 4 }}>🏆 Achievements</div>
+        <div style={{ ...ui, fontSize: 12, color: C.textMuted, marginBottom: 16 }}>
+          {unlockedAchievements.length > 0 ? `${unlockedAchievements.length} unlocked` : "No achievements unlocked yet — keep playing!"}
         </div>
+        {unlockedAchievements.length > 0 ? (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(90px, 1fr))", gap: 10 }}>
+            {unlockedAchievements.map((a, i) => (
+              <div key={a.key} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "16px 8px", borderRadius: 12, background: `${a.color}08`, border: `1.5px solid ${a.color}22`, animation: `slideUp 0.3s ease-out ${i * 0.06}s both` }}>
+                <span style={{ fontSize: 26, animation: "bounce 3s ease-in-out infinite", animationDelay: `${i * 0.3}s` }}>{a.icon}</span>
+                <span style={{ ...ui, fontSize: 10, color: a.color, textAlign: "center", fontWeight: 700 }}>{a.title}</span>
+                <span style={{ ...ui, fontSize: 9, color: C.green, fontWeight: 700 }}>✓ Unlocked</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "24px 0", gap: 10 }}>
+            <span style={{ fontSize: 28, opacity: 0.3 }}>🔒</span>
+            <span style={{ ...ui, fontSize: 13, color: C.textMuted }}>Complete challenges to unlock achievements</span>
+          </div>
+        )}
       </Card>
 
       {/* Edit Profile Modal */}

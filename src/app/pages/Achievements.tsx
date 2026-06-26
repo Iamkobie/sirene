@@ -55,14 +55,14 @@ export function AchievementsScreen() {
         const isTopRank      = leaderboard?.[0]?.id === user.id;
 
         const computed: Record<AchievementKey, boolean> = {
-          first_blood:   achRow?.first_blood   ?? (totalAttempts ?? 0) >= 1,
-          hot_streak:    achRow?.hot_streak    ?? streak >= 7,
-          sirena_quest:  achRow?.sirena_quest  ?? xp >= 10000,
-          polyglot:      achRow?.polyglot      ?? langCount >= 5,
-          speed_demon:   achRow?.speed_demon   ?? (todayAttempts ?? 0) >= 100,
-          perfect_score: achRow?.perfect_score ?? hasPerfect,
-          top_rank:      achRow?.top_rank      ?? isTopRank,
-          book_worm:     achRow?.book_worm     ?? (totalAttempts ?? 0) >= 500,
+          first_blood:   (achRow?.first_blood   === true) || (totalAttempts ?? 0) >= 1,
+          hot_streak:    (achRow?.hot_streak    === true) || streak >= 7,
+          sirena_quest:  (achRow?.sirena_quest  === true) || xp >= 10000,
+          polyglot:      (achRow?.polyglot      === true) || langCount >= 5,
+          speed_demon:   (achRow?.speed_demon   === true) || (todayAttempts ?? 0) >= 100,
+          perfect_score: (achRow?.perfect_score === true) || hasPerfect,
+          top_rank:      (achRow?.top_rank      === true) || isTopRank,
+          book_worm:     (achRow?.book_worm     === true) || (totalAttempts ?? 0) >= 500,
         };
 
         // ── 3. Console log ─────────────────────────────────────────────────
