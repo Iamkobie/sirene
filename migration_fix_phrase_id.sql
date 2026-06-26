@@ -71,7 +71,17 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 --    can update per-language XP without querying the phrases table.
 
 ALTER TABLE public.user_phrase_attempts
-  ADD COLUMN IF NOT EXISTS target_language TEXT;
+  ADD COLUMN IF NOT EXISTS clip_id TEXT,
+  ADD COLUMN IF NOT EXISTS target_language TEXT,
+  ADD COLUMN IF NOT EXISTS transcription TEXT,
+  ADD COLUMN IF NOT EXISTS audio_url TEXT,
+  ADD COLUMN IF NOT EXISTS fluency_score NUMERIC(5,2),
+  ADD COLUMN IF NOT EXISTS pronunciation_score NUMERIC(5,2),
+  ADD COLUMN IF NOT EXISTS completeness_score NUMERIC(5,2),
+  ADD COLUMN IF NOT EXISTS accuracy_score NUMERIC(5,2),
+  ADD COLUMN IF NOT EXISTS overall_score NUMERIC(5,2),
+  ADD COLUMN IF NOT EXISTS points_earned NUMERIC(10,1) DEFAULT 0.0 NOT NULL,
+  ADD COLUMN IF NOT EXISTS feedback TEXT,
+  ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
 
--- Done. The table now accepts AI-generated phrase IDs and the trigger
--- correctly updates profiles.xp and user_language_progress.
+NOTIFY pgrst, 'reload schema';

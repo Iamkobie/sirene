@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
 import { supabase } from "../../lib/supabase";
+import { savePhraseAttempt } from "../../lib/saveAttempt";
 import { C, ui, mono, pixel } from "../constants/theme";
 import { Card, Btn, Page, ProgressBar } from "../components/shared";
 import confetti from "canvas-confetti";
@@ -125,6 +126,7 @@ export function PlayScreen({
   const [gameState, setGameState]       = useState<GameState>("setup");
   const [currentPhrase, setCurrentPhrase] = useState<PhraseData | null>(null);
   const [attempts, setAttempts]         = useState<AttemptData[]>([]);
+  const attemptsRef                     = useRef<AttemptData[]>([]);
   const [hintsRevealed, setHintsRevealed] = useState(0);
   const [loading, setLoading]           = useState(false);
   const [error, setError]               = useState("");
@@ -202,6 +204,7 @@ export function PlayScreen({
       setCurrentPhrase(phrase);
       setHintsRevealed(0);
       setAttempts([]);
+      attemptsRef.current = [];
       setGameState("playing");
     }
   };
@@ -254,10 +257,14 @@ export function PlayScreen({
       hintsUsed: hintsRevealed,
       maxXP: currentDiff.maxXP, hintCost: currentDiff.hintCost,
     });
-    setAttempts((prev) => [
-      ...prev,
-      { phraseData: currentPhrase, hintsUsed: hintsRevealed, hintDeductions: hintDeductionFor(hintsRevealed) },
-    ]);
+    setAttempts((prev) => {
+      const next = [
+        ...prev,
+        { phraseData: currentPhrase, hintsUsed: hintsRevealed, hintDeductions: hintDeductionFor(hintsRevealed) },
+      ];
+      attemptsRef.current = next;
+      return next;
+    });
     if (!evaluatingRef.current) processEvalQueue();
     setRecordingPhase("idle");
     setAudioBlob(null);
@@ -295,12 +302,18 @@ export function PlayScreen({
 
           // Backend may return skipped:true when accuracy < 50 — still record it
           const xp = Math.max(0, Math.round(((ev.overall_score / 100) * item.maxXP - item.hintsUsed * item.hintCost) * 10) / 10);
+          console.log("[Eval OK]", item.phraseData.phrase_id, "score:", ev.overall_score, "xp:", xp);
 
-          setAttempts((prev) =>
-            prev.map((a) =>
+          setAttempts((prev) => {
+            const next = prev.map((a) =>
               a.phraseData.phrase_id === item.phraseData.phrase_id ? { ...a, evaluation: ev, xpEarned: xp } : a
-            )
-          );
+            );
+            attemptsRef.current = next;
+            return next;
+          });
+        } else {
+          const errBody = await res.text().catch(() => "");
+          console.error("[Eval FAILED]", res.status, errBody);
         }
       } catch (e) { console.error("Eval error:", e); }
     }
@@ -314,28 +327,24 @@ export function PlayScreen({
     if (!user) return 0;
 
     let sessionXP = 0;
-    for (const a of attempts) {
+    for (const a of attemptsRef.current) {
       if (!a.evaluation) continue;
-      const { error } = await supabase.from("user_phrase_attempts").insert({
-        user_id:             user.id,
-        phrase_id:           a.phraseData.phrase_id,
-        target_language:     a.phraseData.target_language,
-        clip_id:             a.evaluation.clip_id,
-        transcription:       a.evaluation.transcription,
-        fluency_score:       a.evaluation.fluency,
-        pronunciation_score: a.evaluation.pronunciation,
-        completeness_score:  a.evaluation.completeness,
-        accuracy_score:      a.evaluation.accuracy,
-        overall_score:       a.evaluation.overall_score,
-        points_earned:       a.xpEarned ?? 0,
-        feedback:            a.evaluation.feedback,
+      console.log("[Save] Saving attempt:", a.phraseData.phrase_id, "xp:", a.xpEarned);
+      const { ok, error } = await savePhraseAttempt({
+        userId: user.id,
+        phraseId: a.phraseData.phrase_id,
+        targetLanguage: a.phraseData.target_language,
+        evaluation: a.evaluation,
+        pointsEarned: a.xpEarned ?? 0,
       });
-      if (error) {
-        console.error("Insert error:", error.message, error.details, error.hint);
-      } else {
+      if (ok) {
         sessionXP += a.xpEarned ?? 0;
+        console.log("[Save] Success! session total:", sessionXP);
+      } else {
+        console.error("[Save] Failed:", error);
       }
     }
+    console.log("[Save] Total session XP:", sessionXP);
     return sessionXP;
   };
 
@@ -348,11 +357,13 @@ export function PlayScreen({
     while ((evalQueueRef.current.length > 0 || evaluatingRef.current) && Date.now() < deadline) {
       await new Promise((r) => setTimeout(r, 300));
     }
+    // Allow final setAttempts to flush into attemptsRef
+    await new Promise((r) => setTimeout(r, 100));
 
     // Save to DB immediately — don't wait for user to click "Save"
     const sessionXP = await saveResultsToDB();
     if (sessionXP > 0) onXP?.(sessionXP);
-    refreshProfile?.();
+    await refreshProfile?.();
 
     setGameState("results");
   };
@@ -362,6 +373,7 @@ export function PlayScreen({
     confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 } });
     setGameState("setup");
     setAttempts([]);
+    attemptsRef.current = [];
     setCurrentPhrase(null);
     navigate("/home");
   };
@@ -703,7 +715,7 @@ export function PlayScreen({
         <div style={{ display: "flex", gap: 10 }}>
           <Btn color={C.textMuted} variant="outline" size="md" onClick={() => navigate("/home")}>Home</Btn>
           <Btn color={C.green} size="md" onClick={handleSaveResults}>Done</Btn>
-          <Btn color={C.red} size="md" onClick={() => { setGameState("setup"); setAttempts([]); setCurrentPhrase(null); }}>
+          <Btn color={C.red} size="md" onClick={() => { setGameState("setup"); setAttempts([]); attemptsRef.current = []; setCurrentPhrase(null); }}>
             New Challenge
           </Btn>
         </div>
