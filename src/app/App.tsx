@@ -16,6 +16,20 @@ import { DailyScreen } from "./pages/Daily";
 import { ProfileScreen } from "./pages/Profile";
 import { TrainingScreen } from "./pages/Training";
 
+function RequireAuth({ children }: { children: React.ReactNode }) {
+  const [checked, setChecked] = useState(false);
+  const [authed, setAuthed]   = useState(false);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setAuthed(!!session);
+      setChecked(true);
+    });
+  }, []);
+  if (!checked) return null;
+  if (!authed) return <Navigate to="/login" replace />;
+  return <>{children}</>;
+}
+
 export default function App() {
   const [xp, setXP] = useState(0.0);
   const [playerName, setPlayerName] = useState("PLAYER_ONE");
@@ -29,38 +43,29 @@ export default function App() {
   const { pathname } = useLocation();
   const isLogin = pathname === "/" || pathname === "/login";
 
-  const refreshProfile = async () => {
-    const { data: { user: currentUser } } = await supabase.auth.getUser();
-    if (!currentUser) return;
+  const refreshProfile = async (currentUser?: any) => {
+    const u = currentUser ?? (await supabase.auth.getUser()).data.user;
+    if (!u) return;
+    // Always use user_metadata.username as source of truth
+    const metaUsername = u.user_metadata?.username || "PLAYER_ONE";
     const { data, error } = await supabase
       .from("profiles")
-      .select("*")
-      .eq("id", currentUser.id)
+      .select("xp")
+      .eq("id", u.id)
       .single();
-    if (!error && data) {
-      setPlayerName(data.username || "PLAYER_ONE");
-      setXP(Number(data.xp) || 0.0);
-    }
+    setPlayerName(metaUsername);
+    setXP(!error && data ? Number(data.xp) || 0.0 : 0.0);
   };
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user);
-    });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+      const u = session?.user ?? null;
+      setUser(u);
+      if (u) refreshProfile(u);
+      else { setPlayerName("PLAYER_ONE"); setXP(0.0); }
     });
     return () => subscription.unsubscribe();
   }, []);
-
-  useEffect(() => {
-    if (user) {
-      refreshProfile();
-    } else {
-      setPlayerName("PLAYER_ONE");
-      setXP(0.0);
-    }
-  }, [user]);
 
   useEffect(() => {
     supabase
@@ -128,16 +133,16 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login"        element={<LoginScreen cities={citiesList} />} />
-          <Route path="/home"         element={<HomeScreen xp={xp} rank={rank} playerName={playerName} />} />
-          <Route path="/play"         element={<PlayScreen setChallengePhrase={setChallengePhrase} />} />
-          <Route path="/training"     element={<TrainingScreen onXP={(n) => setXP((p) => p + n)} />} />
-          <Route path="/mission"      element={<MissionScreen challengePhrase={challengePhrase} />} />
-          <Route path="/recording"    element={<RecordingScreen challengePhrase={challengePhrase} />} />
-          <Route path="/evaluation"   element={<EvaluationScreen challengePhrase={challengePhrase} user={user} refreshProfile={refreshProfile} />} />
-          <Route path="/leaderboard"  element={<LeaderboardScreen cities={citiesList} />} />
-          <Route path="/achievements" element={<AchievementsScreen />} />
-          <Route path="/daily"        element={<DailyScreen />} />
-          <Route path="/profile"      element={<ProfileScreen xp={xp} rank={rank} playerName={playerName} onNameChange={setPlayerName} equippedBanner={equippedBanner} setEquippedBanner={setEquippedBanner} equippedAvatar={equippedAvatar} setEquippedAvatar={setEquippedAvatar} />} />
+          <Route path="/home"         element={<RequireAuth><HomeScreen xp={xp} rank={rank} playerName={playerName} /></RequireAuth>} />
+          <Route path="/play"         element={<RequireAuth><PlayScreen setChallengePhrase={setChallengePhrase} /></RequireAuth>} />
+          <Route path="/training"     element={<RequireAuth><TrainingScreen onXP={(n) => setXP((p) => p + n)} /></RequireAuth>} />
+          <Route path="/mission"      element={<RequireAuth><MissionScreen challengePhrase={challengePhrase} /></RequireAuth>} />
+          <Route path="/recording"    element={<RequireAuth><RecordingScreen challengePhrase={challengePhrase} /></RequireAuth>} />
+          <Route path="/evaluation"   element={<RequireAuth><EvaluationScreen challengePhrase={challengePhrase} user={user} refreshProfile={refreshProfile} /></RequireAuth>} />
+          <Route path="/leaderboard"  element={<RequireAuth><LeaderboardScreen cities={citiesList} /></RequireAuth>} />
+          <Route path="/achievements" element={<RequireAuth><AchievementsScreen /></RequireAuth>} />
+          <Route path="/daily"        element={<RequireAuth><DailyScreen /></RequireAuth>} />
+          <Route path="/profile"      element={<RequireAuth><ProfileScreen xp={xp} rank={rank} playerName={playerName} onNameChange={setPlayerName} equippedBanner={equippedBanner} setEquippedBanner={setEquippedBanner} equippedAvatar={equippedAvatar} setEquippedAvatar={setEquippedAvatar} /></RequireAuth>} />
           <Route path="*"             element={<Navigate to="/home" replace />} />
         </Routes>
       </div>
