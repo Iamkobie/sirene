@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { supabase } from "../../lib/supabase";
-import { isSameQuestDay } from "../../lib/dailyQuest";
+import { markVocabBlitzComplete } from "../../lib/dailyQuest";
 import { C, ui, mono, pixel } from "../constants/theme";
 import { Card, Btn, Page, ProgressBar } from "../components/shared";
 import confetti from "canvas-confetti";
@@ -173,31 +173,7 @@ export function TrainingScreen({ onXP }: { onXP?: (xp: number) => void }) {
         return;
       }
 
-      const { data: latestQuest, error: fetchErr } = await supabase
-        .from("daily_quest")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (fetchErr) throw fetchErr;
-
-      if (latestQuest && isSameQuestDay(latestQuest.created_at)) {
-        const { error: updateErr } = await supabase
-          .from("daily_quest")
-          .update({ vocab_blitz: true })
-          .eq("id", latestQuest.id);
-        if (updateErr) throw updateErr;
-      } else {
-        const { error: insertErr } = await supabase
-          .from("daily_quest")
-          .insert({
-            user_id: user.id,
-            vocab_blitz: true,
-          });
-        if (insertErr) throw insertErr;
-      }
+      await markVocabBlitzComplete(user.id);
 
       confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
       if (onXP) onXP(100);

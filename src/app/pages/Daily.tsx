@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { supabase } from "../../lib/supabase";
-import { isSameQuestDay } from "../../lib/dailyQuest";
 import { C, ui, mono, pixel } from "../constants/theme";
 import { Card, Btn, Page } from "../components/shared";
+import { useDailyQuest } from "../hooks/useDailyQuest";
 
 const QUEST_DEFS = [
   { key: "translation_sprint" as const, title: "Translation Sprint", desc: "Translate 10 phrases in 5 minutes", xp: 200, color: C.red, icon: "⚡", route: "/play" },
@@ -14,60 +13,12 @@ const QUEST_DEFS = [
 
 export function DailyScreen() {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [questFlags, setQuestFlags] = useState<Record<string, boolean>>({
-    translation_sprint: false,
-    accent_master: false,
-    vocab_blitz: false,
-    community_share: false,
-  });
+  const { flags: questFlags, loading, error, reload } = useDailyQuest();
 
   const quests = QUEST_DEFS.map((q) => ({
     ...q,
     done: questFlags[q.key] === true,
   }));
-
-  useEffect(() => {
-    async function loadQuests() {
-      setLoading(true);
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          setLoading(false);
-          return;
-        }
-
-        const { data, error } = await supabase
-          .from("daily_quest")
-          .select("*")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (!error && data && isSameQuestDay(data.created_at)) {
-          setQuestFlags({
-            translation_sprint: data.translation_sprint === true,
-            accent_master: data.accent_master === true,
-            vocab_blitz: data.vocab_blitz === true,
-            community_share: data.community_share === true,
-          });
-        } else {
-          setQuestFlags({
-            translation_sprint: false,
-            accent_master: false,
-            vocab_blitz: false,
-            community_share: false,
-          });
-        }
-      } catch (err) {
-        console.error("Error loading daily quests:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadQuests();
-  }, []);
 
   const [timeLeft, setTimeLeft] = useState("");
   useEffect(() => {
@@ -103,6 +54,13 @@ export function DailyScreen() {
           <div style={{ ...mono, fontSize: 22, color: C.red, fontWeight: 700, letterSpacing: 3, textShadow: `0 0 14px ${C.red}55` }}>{timeLeft}</div>
         </Card>
       </div>
+
+      {error && (
+        <div style={{ background: "rgba(255,26,26,0.06)", border: `1.5px solid ${C.red}33`, padding: "10px 14px", borderRadius: 8, color: C.redLight, fontSize: 12, marginBottom: 16, ...ui, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+          <span>⚠️ {error}</span>
+          <button onClick={reload} style={{ ...ui, background: "rgba(255,26,26,0.1)", border: `1px solid ${C.red}44`, borderRadius: 6, padding: "4px 10px", color: C.redLight, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Retry</button>
+        </div>
+      )}
 
       <Card style={{ padding: "16px 22px", marginBottom: 20, display: "flex", alignItems: "center", gap: 16 }} glowColor={doneCount === quests.length ? C.green : C.red}>
         <div style={{ display: "flex", gap: 5 }}>
