@@ -25,6 +25,7 @@ export function LoginScreen({ cities }: { cities: string[] }) {
     const { data, error: err } = await supabase.auth.signInWithPassword({ email, password: pw });
     setLoading(false);
     if (err) { setError(err.message); return; }
+    console.log("JWT Token:", data.session?.access_token);
     navigate("/home");
   };
 
@@ -53,6 +54,7 @@ export function LoginScreen({ cities }: { cities: string[] }) {
         console.warn("Profile city update warning:", updateError);
       }
 
+      console.log("JWT Token:", data.session?.access_token);
       navigate("/home");
     } catch (err: any) {
       setError(err.message || "Signup failed");
