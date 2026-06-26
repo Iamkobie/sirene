@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase";
-import { C, ui, mono, pixel, RANKS, RANK_SVGS, COMING_SOON_RANKS } from "../constants/theme";
+import { C, ui, mono, pixel, RANKS, RANK_SVGS, COMING_SOON_RANKS, getRank } from "../constants/theme";
 import type { Rank } from "../constants/theme";
 import { ProgressBar, Card, Page } from "../components/shared";
 
@@ -20,6 +20,7 @@ const DEFAULT: Record<AchievementKey, boolean> = {
 export function AchievementsScreen() {
   const [loading, setLoading]           = useState(true);
   const [achievements, setAchievements] = useState<Record<AchievementKey, boolean>>(DEFAULT);
+  const [rank, setRank]                 = useState<Rank>("Nuno");
 
   useEffect(() => {
     let active = true;
@@ -53,6 +54,8 @@ export function AchievementsScreen() {
         const langCount      = langProgress?.length ?? 0;
         const hasPerfect     = (perfectCheck?.length ?? 0) > 0;
         const isTopRank      = leaderboard?.[0]?.id === user.id;
+
+        if (active) setRank(getRank(xp));
 
         const computed: Record<AchievementKey, boolean> = {
           first_blood:   (achRow?.first_blood   === true) || (totalAttempts ?? 0) >= 1,
@@ -114,6 +117,7 @@ export function AchievementsScreen() {
   }
 
   const unlockedCount = items.filter((a) => a.done).length;
+  const rankKeys = Object.keys(RANKS) as Rank[];
 
   return (
     <Page>
@@ -133,21 +137,29 @@ export function AchievementsScreen() {
         <div style={{ ...pixel, fontSize: 9, color: C.text, marginBottom: 24, letterSpacing: "0.05em" }}>MYTHICAL RANK PATH</div>
         <div style={{ overflowX: "auto", paddingBottom: 8 }}>
           <div style={{ display: "inline-flex", alignItems: "center" }}>
-            {(Object.keys(RANKS) as Rank[]).map((r, i) => (
+            {(Object.keys(RANKS) as Rank[]).map((r, i) => {
+              const isUnlocked = rankKeys.indexOf(r) <= rankKeys.indexOf(rank);
+              return (
               <div key={r} style={{ display: "contents" }}>
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 100, flexShrink: 0 }}>
-                  <div style={{ width: 72, height: 72, borderRadius: "50%", background: RANKS[r].bg, border: `2.5px solid ${RANKS[r].color}66`, boxShadow: RANKS[r].glow, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <img src={RANK_SVGS[r]} alt={r} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <div style={{ position: "relative", width: 72, height: 72, borderRadius: "50%", background: RANKS[r].bg, border: `2.5px solid ${isUnlocked ? RANKS[r].color + "66" : "rgba(255,255,255,0.08)"}`, boxShadow: isUnlocked ? RANKS[r].glow : "none", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <img src={RANK_SVGS[r]} alt={r} style={{ width: "100%", height: "100%", objectFit: "cover", filter: isUnlocked ? "none" : "brightness(0.25) grayscale(0.6)", transition: "filter 0.3s" }} />
+                    {!isUnlocked && (
+                      <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <span style={{ fontSize: 18, opacity: 0.6 }}>🔒</span>
+                      </div>
+                    )}
                   </div>
-                  <span style={{ ...ui, fontSize: 11, fontWeight: 700, color: RANKS[r].color, textAlign: "center", marginTop: 8 }}>{r}</span>
-                  <span style={{ ...mono, fontSize: 9, color: C.textMuted, marginTop: 4 }}>{RANKS[r].tier}</span>
-                  <span style={{ ...mono, fontSize: 8, color: C.textMuted, marginTop: 2 }}>{RANKS[r].min / 1000}k XP</span>
+                  <span style={{ ...ui, fontSize: 11, fontWeight: 700, color: isUnlocked ? RANKS[r].color : "rgba(255,255,255,0.2)", textAlign: "center", marginTop: 8 }}>{r}</span>
+                  <span style={{ ...mono, fontSize: 9, color: isUnlocked ? C.textMuted : "rgba(255,255,255,0.1)", marginTop: 4 }}>{RANKS[r].tier}</span>
+                  <span style={{ ...mono, fontSize: 8, color: isUnlocked ? C.textMuted : "rgba(255,255,255,0.1)", marginTop: 2 }}>{RANKS[r].min / 1000}k XP</span>
                 </div>
                 {i < Object.keys(RANKS).length - 1 && (
-                  <div style={{ width: 24, height: 2, background: `linear-gradient(90deg, ${RANKS[r].color}55, ${RANKS[(Object.keys(RANKS) as Rank[])[i + 1]].color}55)`, borderRadius: 1, flexShrink: 0, marginBottom: 52 }} />
+                  <div style={{ width: 24, height: 2, background: isUnlocked ? `linear-gradient(90deg, ${RANKS[r].color}55, ${RANKS[(Object.keys(RANKS) as Rank[])[i + 1]].color}55)` : "rgba(255,255,255,0.06)", borderRadius: 1, flexShrink: 0, marginBottom: 52 }} />
                 )}
               </div>
-            ))}
+            );
+            })}
             <div style={{ width: 24, height: 2, background: `linear-gradient(90deg, ${RANKS.Sirena.color}44, rgba(255,255,255,0.08))`, borderRadius: 1, flexShrink: 0, marginBottom: 52 }} />
             {COMING_SOON_RANKS.map((cs, i) => (
               <div key={`cs-${i}`} style={{ display: "contents" }}>
