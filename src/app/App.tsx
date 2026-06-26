@@ -52,7 +52,7 @@ export default function App() {
       .from("profiles")
       .select("xp")
       .eq("id", u.id)
-      .single();
+      .maybeSingle();
     setPlayerName(metaUsername);
     setXP(!error && data ? Number(data.xp) || 0.0 : 0.0);
   };
@@ -134,7 +134,7 @@ export default function App() {
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login"        element={<LoginScreen cities={citiesList} />} />
           <Route path="/home"         element={<RequireAuth><HomeScreen xp={xp} rank={rank} playerName={playerName} /></RequireAuth>} />
-          <Route path="/play"         element={<RequireAuth><PlayScreen setChallengePhrase={setChallengePhrase} /></RequireAuth>} />
+          <Route path="/play"         element={<RequireAuth><PlayScreen setChallengePhrase={setChallengePhrase} onXP={(n) => setXP((p) => p + n)} refreshProfile={refreshProfile} /></RequireAuth>} />
           <Route path="/training"     element={<RequireAuth><TrainingScreen onXP={(n) => setXP((p) => p + n)} /></RequireAuth>} />
           <Route path="/mission"      element={<RequireAuth><MissionScreen challengePhrase={challengePhrase} /></RequireAuth>} />
           <Route path="/recording"    element={<RequireAuth><RecordingScreen challengePhrase={challengePhrase} /></RequireAuth>} />

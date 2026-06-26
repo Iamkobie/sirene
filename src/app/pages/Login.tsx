@@ -32,13 +32,33 @@ export function LoginScreen({ cities }: { cities: string[] }) {
     if (!username || !age || !sex || !motherTongue || !city) { setError("Please fill in all fields."); return; }
     if (pw !== confirmPw) { setError("Passwords do not match."); return; }
     setError(""); setLoading(true);
-    const { data, error: err } = await supabase.auth.signUp({
-      email, password: pw,
-      options: { data: { username, age: Number(age), sex, mother_tongue: motherTongue, city } },
-    });
-    setLoading(false);
-    if (err) { setError(err.message); return; }
-    navigate("/home");
+    
+    try {
+      // Step 1: Sign up with user metadata
+      const { data, error: signupError } = await supabase.auth.signUp({
+        email, password: pw,
+        options: { data: { username, age: Number(age), sex, mother_tongue: motherTongue, city } },
+      });
+      
+      if (signupError) throw signupError;
+      if (!data.user) throw new Error("Signup failed - no user returned");
+
+      // Step 2: Also update the profiles table directly (in case trigger didn't fire or we need to ensure city is set)
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ city })
+        .eq("id", data.user.id);
+      
+      if (updateError) {
+        console.warn("Profile city update warning:", updateError);
+      }
+
+      navigate("/home");
+    } catch (err: any) {
+      setError(err.message || "Signup failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

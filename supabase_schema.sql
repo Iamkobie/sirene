@@ -404,3 +404,84 @@ INSERT INTO public.cities (name) VALUES
 ('Baguio'),
 ('Other')
 ON CONFLICT (name) DO NOTHING;
+
+-- ==========================================
+-- 8. ACHIEVEMENTS TABLE
+-- ==========================================
+
+CREATE TABLE IF NOT EXISTS public.achievements (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    first_blood BOOLEAN DEFAULT FALSE,
+    hot_streak BOOLEAN DEFAULT FALSE,
+    sirena_quest BOOLEAN DEFAULT FALSE,
+    polyglot BOOLEAN DEFAULT FALSE,
+    speed_demon BOOLEAN DEFAULT FALSE,
+    perfect_score BOOLEAN DEFAULT FALSE,
+    top_rank BOOLEAN DEFAULT FALSE,
+    book_worm BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE (user_id)
+);
+
+-- Enable RLS
+ALTER TABLE public.achievements ENABLE ROW LEVEL SECURITY;
+
+-- Allow users to view their own achievements
+DROP POLICY IF EXISTS "Allow users to view their own achievements" ON public.achievements;
+CREATE POLICY "Allow users to view their own achievements" 
+ON public.achievements FOR SELECT USING (auth.uid() = user_id);
+
+-- Allow users to update their own achievements
+DROP POLICY IF EXISTS "Allow users to update their own achievements" ON public.achievements;
+CREATE POLICY "Allow users to update their own achievements" 
+ON public.achievements FOR UPDATE USING (auth.uid() = user_id);
+
+-- Auto-create achievements row when profile is created
+CREATE OR REPLACE FUNCTION public.handle_new_achievement()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO public.achievements (user_id)
+    VALUES (NEW.id)
+    ON CONFLICT (user_id) DO NOTHING;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE TRIGGER on_profile_created_achievements
+AFTER INSERT ON public.profiles
+FOR EACH ROW
+EXECUTE FUNCTION public.handle_new_achievement();
+
+-- ==========================================
+-- 9. DAILY QUEST TABLE
+-- ==========================================
+
+CREATE TABLE IF NOT EXISTS public.daily_quest (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    translation_sprint BOOLEAN DEFAULT FALSE,
+    accent_master BOOLEAN DEFAULT FALSE,
+    vocab_blitz BOOLEAN DEFAULT FALSE,
+    community_share BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enable RLS
+ALTER TABLE public.daily_quest ENABLE ROW LEVEL SECURITY;
+
+-- Allow users to view their own daily quests
+DROP POLICY IF EXISTS "Allow users to view their own daily quests" ON public.daily_quest;
+CREATE POLICY "Allow users to view their own daily quests" 
+ON public.daily_quest FOR SELECT USING (auth.uid() = user_id);
+
+-- Allow users to insert their own daily quests
+DROP POLICY IF EXISTS "Allow users to insert their own daily quests" ON public.daily_quest;
+CREATE POLICY "Allow users to insert their own daily quests" 
+ON public.daily_quest FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- Allow users to update their own daily quests
+DROP POLICY IF EXISTS "Allow users to update their own daily quests" ON public.daily_quest;
+CREATE POLICY "Allow users to update their own daily quests" 
+ON public.daily_quest FOR UPDATE USING (auth.uid() = user_id);
