@@ -14,6 +14,7 @@ import { LeaderboardScreen } from "./pages/Leaderboard";
 import { AchievementsScreen } from "./pages/Achievements";
 import { DailyScreen } from "./pages/Daily";
 import { ProfileScreen } from "./pages/Profile";
+import { TrainingScreen } from "./pages/Training";
 
 export default function App() {
   const [xp, setXP] = useState(0.0);
@@ -109,16 +110,18 @@ export default function App() {
       {!isLogin && <Navbar xp={xp} rank={rank} playerName={playerName} onLogout={async () => { await supabase.auth.signOut(); navigate("/login"); }} />}
       {/* Mobile bottom nav */}
       {!isLogin && (
-        <nav style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 100, display: "none", background: "rgba(10,10,10,0.96)", backdropFilter: "blur(20px)", borderTop: `1.5px solid ${C.border}`, padding: "8px 12px 12px", justifyContent: "space-around" }}>
-          {NAV_ITEMS.slice(0, 5).map(({ label, icon, screen: s }) => {
+        <nav style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 100, display: "none", background: "rgba(10,10,10,0.96)", backdropFilter: "blur(20px)", borderTop: `1.5px solid ${C.border}`, padding: "8px 8px 12px", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+          <div style={{ display: "flex", justifyContent: "flex-start", gap: 4, minWidth: "max-content", padding: "0 4px" }}>
+          {NAV_ITEMS.map(({ label, icon, screen: s }) => {
             const active = (pathname.replace("/", "") || "home") === s;
             return (
-              <button key={s} onClick={() => navigate(`/${s}`)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, background: "none", border: "none", cursor: "pointer", color: active ? C.red : C.textMuted, padding: "4px 8px", borderRadius: 8, transition: "all 0.2s" }}>
+              <button key={s} onClick={() => navigate(`/${s}`)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, background: "none", border: "none", cursor: "pointer", color: active ? C.red : C.textMuted, padding: "4px 10px", borderRadius: 8, transition: "all 0.2s", flexShrink: 0 }}>
                 <span style={{ fontSize: 16 }}>{icon}</span>
-                <span style={{ ...ui, fontSize: 9, fontWeight: 700 }}>{label}</span>
+                <span style={{ ...ui, fontSize: 9, fontWeight: 700, whiteSpace: "nowrap" }}>{label}</span>
               </button>
             );
           })}
+          </div>
         </nav>
       )}
       <div style={{ position: "relative", zIndex: 1 }}>
@@ -126,7 +129,8 @@ export default function App() {
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login"        element={<LoginScreen cities={citiesList} />} />
           <Route path="/home"         element={<HomeScreen xp={xp} rank={rank} playerName={playerName} />} />
-          <Route path="/play"         element={<PlayScreen setChallengePhrase={setChallengePhrase} onXP={(n) => setXP((p) => p + n)} />} />
+          <Route path="/play"         element={<PlayScreen setChallengePhrase={setChallengePhrase} />} />
+          <Route path="/training"     element={<TrainingScreen onXP={(n) => setXP((p) => p + n)} />} />
           <Route path="/mission"      element={<MissionScreen challengePhrase={challengePhrase} />} />
           <Route path="/recording"    element={<RecordingScreen challengePhrase={challengePhrase} />} />
           <Route path="/evaluation"   element={<EvaluationScreen challengePhrase={challengePhrase} user={user} refreshProfile={refreshProfile} />} />
@@ -166,7 +170,7 @@ export default function App() {
         @media (max-width: 768px) {
           header { padding: 8px 14px !important; }
           header nav { display: none !important; }
-          nav[style*="position: fixed"][style*="bottom: 0"] { display: flex !important; }
+          nav[style*="position: fixed"][style*="bottom: 0"] { display: block !important; }
           main > div { padding: 20px 14px 80px !important; }
         }
         @media (min-width: 769px) {

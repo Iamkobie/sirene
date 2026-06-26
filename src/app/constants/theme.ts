@@ -10,7 +10,7 @@ import manananggalIcon from "../../assets/ranks/icon-manananggal.png";
 import aswangIcon from "../../assets/ranks/icon-aswang.png";
 import sirenaIcon from "../../assets/ranks/icon-sirena.png";
 
-export type Screen = "login" | "home" | "play" | "mission" | "recording" | "evaluation" | "leaderboard" | "profile" | "achievements" | "daily";
+export type Screen = "login" | "home" | "play" | "training" | "mission" | "recording" | "evaluation" | "leaderboard" | "profile" | "achievements" | "daily";
 export type Rank = "Nuno" | "Tikbalang" | "Manananggal" | "Aswang" | "Sirena";
 
 export const RANK_SVGS: Record<Rank, string> = {
@@ -109,6 +109,7 @@ export const LANGUAGES = ["Cebuano", "Ilocano", "Hiligaynon", "Waray", "Kapampan
 export const NAV_ITEMS: { label: string; icon: string; screen: Screen }[] = [
   { label: "Home",         icon: "⌂",  screen: "home" },
   { label: "Play",         icon: "▶",  screen: "play" },
+  { label: "Training",     icon: "📖", screen: "training" },
   { label: "Leaderboard",  icon: "★",  screen: "leaderboard" },
   { label: "Daily",        icon: "⚡", screen: "daily" },
   { label: "Achievements", icon: "🏆", screen: "achievements" },
